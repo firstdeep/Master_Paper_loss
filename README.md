@@ -1,5 +1,5 @@
 
-download torchvision
+- download torchvision
 
 git clone https://github.com/pytorch/vision.git
 
