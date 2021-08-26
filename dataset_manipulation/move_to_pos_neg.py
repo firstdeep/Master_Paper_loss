@@ -1,40 +1,49 @@
 import os
 import numpy as np
-from shutil import copyfile
+from shutil import copyfile, move
 import cv2
+import natsort
 
-src_dir = '/home/hyoseok/research/medical/aaa/dataset/'
-tgt_pos_dir = '/home/hyoseok/research/medical/aaa/aaa_mask/AAAGilDatasetPos/'
-tgt_neg_dir = '/home/hyoseok/research/medical/aaa/aaa_mask/AAAGilDatasetNeg/'
+mask_dir = '/home/bh/Desktop/AAA_DATA/512/mask_pos_s_rename/'
+raw_dir = '/home/bh/Desktop/AAA_DATA/512/raw_pos_s_rename/'
 
-major = 0
-minor = 0
-
-dir_list = os.listdir(src_dir + '/raw_zinv/')
-
-for entry in dir_list:
-    minor = 0
-    file_list = os.listdir(src_dir + '/raw_zinv/' + entry)
-    file_list.sort()
-    for f in file_list:
-        if 'png' in f:
-            src_img = src_dir + '/raw_zinv/' + entry + '/' + f
-            src_mask = src_dir + '/segment_post/' + entry + '/' + f
+mask_dst_dir = '/home/bh/Desktop/AAA_DATA/256/mask_pos_s_rename/'
+raw_dst_dir = '/home/bh/Desktop/AAA_DATA/256/raw_pos_s_rename/'
 
 
-            mask = cv2.imread(src_mask, 0)
-            if np.sum(mask) > 255:
-                tgt_img = tgt_pos_dir + '/raw/' + f
-                tgt_mask = tgt_pos_dir + '/mask/' + f
+list_file = natsort.natsorted(os.listdir(mask_dir))
+print(len(list_file))
 
-            else:
-                tgt_img = tgt_neg_dir + '/raw/' + f
-                tgt_mask = tgt_neg_dir + '/mask/' + f
+for idx in list_file:
 
-            copyfile(src_img, tgt_img)
-            copyfile(src_mask, tgt_mask)
+    mask = cv2.imread(os.path.join(mask_dir, idx), cv2.IMREAD_GRAYSCALE)
+    raw = cv2.imread(os.path.join(raw_dir, idx), cv2.IMREAD_GRAYSCALE)
 
+    # print(len(np.unique(mask)))
+    # if len(np.unique(mask))>1:
+    #     copyfile(os.path.join(mask_dir, idx), os.path.join(mask_dst_dir, idx))
+    #     copyfile(os.path.join(raw_dir, idx), os.path.join(raw_dst_dir, idx))
 
+    mask_256 = cv2.resize(mask, (256, 256), interpolation=cv2.INTER_LINEAR)
+    raw_256 = cv2.resize(raw, (256, 256), interpolation=cv2.INTER_LINEAR)
 
+    # print(np.unique(mask_256))
+    mask_256[mask_256 > 127] = 255
+    mask_256[mask_256 <= 127] = 0
+    print(np.unique(mask_256))
 
+    os.makedirs(mask_dst_dir, exist_ok=True)
+    os.makedirs(raw_dst_dir, exist_ok=True)
+
+    cv2.imwrite(os.path.join(mask_dst_dir, idx), mask_256)
+    cv2.imwrite(os.path.join(raw_dst_dir, idx), raw_256)
+
+    # for file in file_mask:
+    #     file_name = "%d_"%(int(idx+1))+file
+    #     copyfile(os.path.join(mask_dir, subject, str(file)), os.path.join(mask_dst_dir,file_name))
+    #     copyfile(os.path.join(raw_dir, subject, str(file)), os.path.join(raw_dst_dir,file_name))
+
+print("done")
+num_mask = natsort.natsorted(os.listdir(mask_dst_dir))
+print(len(num_mask))
 

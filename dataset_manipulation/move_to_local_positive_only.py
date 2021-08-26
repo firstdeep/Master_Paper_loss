@@ -1,42 +1,54 @@
 import os
 import numpy as np
-from shutil import copyfile
+from shutil import copyfile, move
 import cv2
+import natsort
 
-src_dir = '/home/hyoseok/research/medical/aaa/dataset/'
-tgt_dir = '/home/hyoseok/research/medical/aaa/aaa_mask/AAAGilDatasetPos/'
+mask_dir = '/home/bh/Desktop/AAA_DATA_NEW/512/mask'
+raw_dir = '/home/bh/Desktop/AAA_DATA_NEW/512/raw'
 
-major = 0
-minor = 0
+mask_dst_dir = '/home/bh/Desktop/AAA_DATA_NEW/512/mask_all'
+raw_dst_dir = '/home/bh/Desktop/AAA_DATA_NEW/512/raw_all'
 
-dir_list = os.listdir(src_dir + '/raw')
+mask_pos_dir = '/home/bh/Desktop/AAA_DATA_NEW/512/mask_pos'
+raw_pos_dir = '/home/bh/Desktop/AAA_DATA_NEW/512/raw_pos'
 
-for entry in dir_list:
-    minor = 0
-    file_list = os.listdir(src_dir + '/raw/' + entry)
-    file_list.sort()
-    for f in file_list:
-        if 'png' in f:
-            src_img = src_dir + '/raw/' + entry + '/' + f
-            src_mask = src_dir + '/segment_post/' + entry + '/' + f
+list_file = natsort.natsorted(os.listdir(mask_dst_dir))
+# list_folder.pop()
+
+subject = np.arange(1,52)
+sub = 1
+count = 0
+
+for file_idx in list_file:
+    split_file = file_idx.split('_')
+
+    mask = cv2.imread(os.path.join(mask_dst_dir, file_idx), cv2.IMREAD_GRAYSCALE)
+    raw = cv2.imread(os.path.join(raw_dst_dir, file_idx), cv2.IMREAD_GRAYSCALE)
+
+    if sub == int(split_file[0]):
+
+        if int(len(np.unique(mask))) == 2:
+            print(file_idx)
+            idx = "{0:04d}".format(count)
+            rename = str(sub)+"_"+str(idx)+".png"
+            cv2.imwrite(os.path.join(mask_pos_dir, rename),mask)
+            cv2.imwrite(os.path.join(raw_pos_dir, rename), raw)
+            count = count + 1
+
+    elif sub != int(split_file[0]):
+        sub = sub+1
+        count = 0
+
+        if int(len(np.unique(mask))) == 2:
+            idx = "{0:04d}".format(count)
+            rename = str(sub)+"_"+str(idx)+".png"
+            cv2.imwrite(os.path.join(mask_pos_dir, rename),mask)
+            cv2.imwrite(os.path.join(raw_pos_dir, rename), raw)
+            count = count + 1
 
 
-            mask = cv2.imread(src_mask, 0)
-            if np.sum(mask) > 255:
-
-                img_name = 'img_%04d_%04d.png' % (major, minor)
-                mask_name = 'mask_%04d_%04d.png' % (major, minor)
-
-                tgt_img = tgt_dir + '/img/' + img_name
-                tgt_mask = tgt_dir + '/mask/' + mask_name
-
-                copyfile(src_img, tgt_img)
-                copyfile(src_mask, tgt_mask)
-
-                minor = minor + 1
-
-                print(tgt_img)
-                print(tgt_mask)
 
 
-    major = major + 1
+
+

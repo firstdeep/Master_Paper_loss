@@ -1,38 +1,28 @@
 import os
+import numpy as np
 from shutil import copyfile, move
+import cv2
+import natsort
 
-# flip along z-axis
-# image000 --> image max
+mask_dir = '/home/bh/Desktop/AAA_DATA_NEW/512/mask_all'
+raw_dir = '/home/bh/Desktop/AAA_DATA_NEW/512/raw_all'
 
-src_dir = '/home/hyoseok/research/medical/aaa/dataset/'
-tgt_dir = '/home/hyoseok/research/medical/aaa/dataset/'
+mask_dst_dir = '/home/bh/Desktop/AAA_DATA_NEW/512/mask_all'
+raw_dst_dir = '/home/bh/Desktop/AAA_DATA_NEW/512/raw_all'
 
-dir_list = os.listdir(src_dir + '/raw')
+list_file = natsort.natsorted(os.listdir(mask_dir))
 
-for entry in dir_list:
-    file_list = os.listdir(src_dir + '/raw/' + entry)
-    file_list_inv = os.listdir(src_dir + '/raw/' + entry)
-    file_list.sort()
-    file_list_inv.sort(reverse=True)
-    num_files = len(file_list)
+for file_idx in list_file:
 
-    if not os.path.exists(src_dir + '/raw_zinv/' + entry):
-        os.makedirs(src_dir + '/raw_zinv/' + entry)
+    idx_split = file_idx.split('_')
 
+    # if int(idx_split[0]) == 1:
+    img_mask = cv2.imread(os.path.join(mask_dir, file_idx), cv2.IMREAD_GRAYSCALE)
 
-    for i in range(num_files):
-        name1 = file_list[i]
-        name2 = file_list_inv[i]
-        print('%s --> %s'%(name1, name2))
+    total_sum = img_mask.sum()
+    if total_sum !=0 and total_sum/255 < 100:
+        # print(file_idx)
+        img_mask = img_mask * 0
+        print(np.unique(img_mask))
+        cv2.imwrite(os.path.join(mask_dir, file_idx), img_mask)
 
-        src_name = src_dir + '/raw/' + entry + '/' + name1
-        tgt_name = src_dir + '/raw_zinv/' + entry + '/' + name2
-
-        print(src_name)
-        print(tgt_name)
-
-        copyfile(src_name, tgt_name)
-
-
-
-    # for f in file_list:

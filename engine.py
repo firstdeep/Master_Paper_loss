@@ -4,11 +4,14 @@ import time
 import torch
 
 import torchvision.models.detection.mask_rcnn
+from torchvision.models.detection import roi_heads
 
 from coco_utils import get_coco_api_from_dataset
 from coco_eval import CocoEvaluator
 import utils
-
+import numpy as np
+from PIL import Image
+import cv2
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
     model.train()
@@ -24,12 +27,14 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
         lr_scheduler = utils.warmup_lr_scheduler(optimizer, warmup_iters, warmup_factor)
 
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
+
         images = list(image.to(device) for image in images)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
         loss_dict = model(images, targets)
 
         losses = sum(loss for loss in loss_dict.values())
+
 
         # reduce losses over all GPUs for logging purposes
         loss_dict_reduced = utils.reduce_dict(loss_dict)
@@ -75,34 +80,38 @@ def evaluate(model, data_loader, device):
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = 'Test:'
 
-    coco = get_coco_api_from_dataset(data_loader.dataset)
-    iou_types = _get_iou_types(model)
-    coco_evaluator = CocoEvaluator(coco, iou_types)
+    total_loss = []
 
     for image, targets in metric_logger.log_every(data_loader, 100, header):
         image = list(img.to(device) for img in image)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
         torch.cuda.synchronize()
-        model_time = time.time()
         outputs = model(image)
 
-        outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
-        model_time = time.time() - model_time
+        if (list(outputs[0]['boxes'].shape)[0] == 0):
+            mask = np.zeros((256, 256), dtype=np.uint8)
+        else:
+            mask = Image.fromarray(outputs[0]['masks'][0, 0].mul(255).byte().cpu().numpy())
 
-        res = {target["image_id"].item(): output for target, output in zip(targets, outputs)}
-        evaluator_time = time.time()
-        coco_evaluator.update(res)
-        evaluator_time = time.time() - evaluator_time
-        metric_logger.update(model_time=model_time, evaluator_time=evaluator_time)
+        img_mask = np.array(mask)
+        img_mask[img_mask > 127] = 255
+        img_mask[img_mask <= 127] = 0
+        img_mask = (img_mask/255).astype(np.uint32)
 
-    # gather the stats from all processes
-    metric_logger.synchronize_between_processes()
-    print("Averaged stats:", metric_logger)
-    coco_evaluator.synchronize_between_processes()
+        target_mask = Image.fromarray(targets[0]['masks'][0].byte().cpu().numpy())
+        target_mask = np.array(target_mask).astype(np.uint32)
 
-    # accumulate predictions from all images
-    coco_evaluator.accumulate()
-    coco_evaluator.summarize()
-    torch.set_num_threads(n_threads)
-    return coco_evaluator
+        p_sum = img_mask.sum()
+        t_sum = target_mask.sum()
+
+        intersection = np.bitwise_and(img_mask, target_mask).sum()
+        union = np.bitwise_or(img_mask, target_mask).sum()
+
+        jaccard = intersection / union
+        dice = 2.0*intersection / (p_sum + t_sum)
+
+        total_loss.append(((jaccard+dice)/2.0))
+
+    total_loss = np.array(total_loss)
+    return total_loss.mean()
