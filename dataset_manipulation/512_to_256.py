@@ -4,11 +4,11 @@ from shutil import copyfile, move
 import cv2
 import natsort
 
-mask_dir = '/home/bh/Desktop/AAA_DATA/512/mask_pos_s_rename/'
-raw_dir = '/home/bh/Desktop/AAA_DATA/512/raw_pos_s_rename/'
+mask_dir = '/home/bh/Desktop/0826_Data/512/mask_pos'
+raw_dir = '/home/bh/Desktop/0826_Data/512/raw_pos'
 
-mask_dst_dir = '/home/bh/Desktop/AAA_DATA/256/mask_pos_s_rename/'
-raw_dst_dir = '/home/bh/Desktop/AAA_DATA/256/raw_pos_s_rename/'
+mask_dst_dir = '/home/bh/Desktop/0826_Data/256/mask_pos'
+raw_dst_dir = '/home/bh/Desktop/0826_Data/256/raw_pos'
 
 
 list_file = natsort.natsorted(os.listdir(mask_dir))
@@ -30,20 +30,11 @@ for idx in list_file:
     # print(np.unique(mask_256))
     mask_256[mask_256 > 127] = 255
     mask_256[mask_256 <= 127] = 0
-    print(np.unique(mask_256))
+    # print(np.unique(mask_256))
 
-    os.makedirs(mask_dst_dir, exist_ok=True)
-    os.makedirs(raw_dst_dir, exist_ok=True)
+    # os.makedirs(mask_dst_dir, exist_ok=True)
+    # os.makedirs(raw_dst_dir, exist_ok=True)
 
     cv2.imwrite(os.path.join(mask_dst_dir, idx), mask_256)
     cv2.imwrite(os.path.join(raw_dst_dir, idx), raw_256)
-
-    # for file in file_mask:
-    #     file_name = "%d_"%(int(idx+1))+file
-    #     copyfile(os.path.join(mask_dir, subject, str(file)), os.path.join(mask_dst_dir,file_name))
-    #     copyfile(os.path.join(raw_dir, subject, str(file)), os.path.join(raw_dst_dir,file_name))
-
-print("done")
-num_mask = natsort.natsorted(os.listdir(mask_dst_dir))
-print(len(num_mask))
 
