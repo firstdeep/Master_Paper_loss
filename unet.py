@@ -1,24 +1,27 @@
 import torch
 import torch.nn as nn
-from torch.nn import init
-import numpy as np
 
 
-class unet(nn.Module):
+
+class conv_block(nn.Module):
+    def __init__(self, in_channel, out_channel, kernel_size=3, stride=1, padding=1, bias=True):
+        super(conv_block, self).__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels=in_channel, out_channels=out_channel,
+                      kernel_size=kernel_size, stride=stride, padding=padding,
+                      bias=bias),
+            nn.BatchNorm2d(num_features=out_channel),
+            nn.ReLU()
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+
+        return x
+
+class mask_unet(nn.Module):
     def __init__(self):
-        super(unet, self).__init__()
-
-        def conv_block(in_channel, out_channel, kernel_size=3, stride=1, padding=1, bias=True):
-            layers = []
-            layers += [nn.Conv2d(in_channels=in_channel, out_channels=out_channel,
-                                 kernel_size=kernel_size, stride=stride, padding=padding,
-                                 bias=bias)]
-            layers +=[nn.BatchNorm2d(num_features=out_channel)]
-            layers += [nn.ReLU()]
-
-            conv_layer = nn.Sequential(*layers)
-
-            return conv_layer
+        super(mask_unet, self).__init__()
 
         # Encoder path
         self.enc1_1 = conv_block(in_channel=256, out_channel=256)
@@ -44,14 +47,18 @@ class unet(nn.Module):
 
         self.unpool1 = nn.ConvTranspose2d(in_channels=256, out_channels=256,
                                           kernel_size=2, stride=2, padding=0, bias=True)
+
         self.dec1_2 = conv_block(in_channel=2 * 256, out_channel=256)
         self.dec1_1 = conv_block(in_channel=256, out_channel=256)
 
         self.fc = nn.Conv2d(in_channels=256, out_channels=2, kernel_size=1, stride=1, padding=0)
 
+        # for name, param in self.named_parameters():
+        #     if "weight" in name:
+        #         nn.init.kaiming_normal_(param, mode="fan_out", nonlinearity="relu")
 
-    def forward(self, x):
-        enc1_1 = self.enc1_1(x)
+    def forward(self, input):
+        enc1_1 = self.enc1_1(input)
         enc1_2 = self.enc1_2(enc1_1)
         pool1 = self.pool1(enc1_2)
 
@@ -73,17 +80,6 @@ class unet(nn.Module):
         dec1_2 = self.dec1_2(cat1)
         dec1_1 = self.dec1_1(dec1_2)
 
-        x = self.fc(dec1_1)
+        output = self.fc(dec1_1)
 
-        return x
-
-if __name__ == "__main__":
-
-    input = torch.ones((1,256,28,28))
-
-    model = unet()
-
-    output = model(input)
-
-    print(output.shape)
-
+        return output

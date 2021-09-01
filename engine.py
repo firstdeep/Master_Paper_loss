@@ -13,6 +13,7 @@ import numpy as np
 from PIL import Image
 import cv2
 
+
 def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
     model.train()
     metric_logger = utils.MetricLogger(delimiter="  ")

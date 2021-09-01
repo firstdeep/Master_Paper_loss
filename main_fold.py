@@ -17,6 +17,7 @@ import pandas as pd
 
 from gil_eval import *
 import random
+from unet import mask_unet
 
 def get_instance_segmentation_model(num_classes):
     # load an instance segmentation model pre-trained on COCO
@@ -35,6 +36,7 @@ def get_instance_segmentation_model(num_classes):
                                                        hidden_layer,
                                                        num_classes)
 
+    model.roi_heads.mask_unet = mask_unet()
     return model
 
 
@@ -45,8 +47,8 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
     fold_num = 4
     device = torch.device(f'cuda:{GPU_NUM}') if torch.cuda.is_available() else torch.device('cpu')
 
-    raw_path = 'data/update/all'
-    # raw_path = 'data/update/pos'
+    # raw_path = 'data/update/all'
+    raw_path = 'data/update/pos'
     # raw_path = 'data/1_NEW/256_all'
 
     total_dataset = GilAAADataset(raw_path, get_transform(train=True))
@@ -58,6 +60,8 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
     kfold = KFold(n_splits=fold_num, shuffle=False)
 
     for fold, (train_ids, test_ids) in enumerate(kfold.split(total_subject)):
+        if fold!=0:
+            continue
 
         for index, value in enumerate(test_ids):
             test_ids[index] = value + 1
@@ -346,14 +350,17 @@ if __name__ == '__main__':
     # model_path_name = "0823_fd_rpn"
 
     # model_path_name = "0824_fd_rpn_1_1"
-    model_path_name = "0824_fd_rpn_2_1"
+    # model_path_name = "0824_fd_rpn_2_1"
     # model_path_name = "0824_fd_rpn_3_1"
 
     # model_path_name = "0824_fd_rpn_1_0.5"
     # model_path_name = "0824_fd_rpn_2_0.5"
     # model_path_name = "0824_fd_rpn_3_0.5"
 
-    gpu_idx = 1
+    # model_path_name = "maskunet_28_default"
+    model_path_name = "maskrcnn_default"
+
+    gpu_idx = 2
     train_batch_size = 2
 
     print("*"*50)
