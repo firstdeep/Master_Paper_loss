@@ -13,8 +13,6 @@ from torchvision.models.detection import roi_heads
 from torchsummary import summary as summary_
 import natsort
 
-import pandas as pd
-
 from gil_eval import *
 import random
 from unet import mask_unet
@@ -48,8 +46,8 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
     device = torch.device(f'cuda:{GPU_NUM}') if torch.cuda.is_available() else torch.device('cpu')
 
     # raw_path = 'data/update/all'
-    raw_path = 'data/update/pos'
-    # raw_path = 'data/1_NEW/256_all'
+    # raw_path = 'data/update/pos'
+    raw_path = 'data/09_new'
 
     total_dataset = GilAAADataset(raw_path, get_transform(train=True))
     total_dataset_test = GilAAADataset(raw_path, get_transform(train=False))
@@ -138,8 +136,8 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
                 train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
 
                 # validation
-                val_loss = evaluate(model, data_loader_valid, device=device)
-                print(val_loss)
+                # val_loss = evaluate(model, data_loader_valid, device=device)
+                # print(val_loss)
 
                 # update the learning rate
                 # lr_scheduler.step(val_loss)
@@ -156,12 +154,12 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
         print("\n")
         print("*" * 25)
 
-        if not os.path.exists("/home/bh/Downloads/aaa_segmentation/0803/result_%s/"%(model_path_name)):
-            os.mkdir("/home/bh/Downloads/aaa_segmentation/0803/result_%s/"%(model_path_name))
-        if not os.path.exists('/home/bh/Downloads/aaa_segmentation/0803/result_%s/result_analysis/'%(model_path_name)):
-            os.mkdir("/home/bh/Downloads/aaa_segmentation/0803/result_%s/result_analysis/"%(model_path_name))
-        save_dir = '/home/bh/Downloads/aaa_segmentation/0803/result_%s/'%(model_path_name)
-        save_dir_analysis = '/home/bh/Downloads/aaa_segmentation/0803/result_%s/result_analysis/'%(model_path_name)
+        if not os.path.exists("/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/"%(model_path_name)):
+            os.mkdir("/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/"%(model_path_name))
+        if not os.path.exists('/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/result_analysis/'%(model_path_name)):
+            os.mkdir("/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/result_analysis/"%(model_path_name))
+        save_dir = '/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/'%(model_path_name)
+        save_dir_analysis = '/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/result_analysis/'%(model_path_name)
 
         total_ol = []
         total_ja = []
@@ -170,8 +168,8 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
         total_fn = []
 
         for fold, (train_ids, test_ids) in enumerate(kfold.split(total_subject)):
-            # if fold!= 0:
-            #     continue
+            if fold!= 0:
+                continue
 
             for index, value in enumerate(test_ids):
                 test_ids[index] = value + 1
@@ -358,8 +356,23 @@ if __name__ == '__main__':
     # model_path_name = "0824_fd_rpn_3_0.5"
 
     # model_path_name = "maskunet_28_default"
-    model_path_name = "maskrcnn_default"
+    # model_path_name = "maskunet_28_default_20_5"
+    # model_path_name = "maskunet_16_default"
+    # model_path_name = "maskunet_36_default"
+    # model_path_name = "maskunet_36_base"
 
+    # model_path_name = "maskunet_16_default_20_5"
+    # model_path_name = "maskrcnn_default"
+    # model_path_name = "maskrcnn_default_20_5"
+    # model_path_name = "maskrcnn36"
+    # model_path_name = "maskrcnn16"
+    # model_path_name = "maskrcnn28"
+
+    model_path_name = "new_data_default"
+
+
+    # Now: Only use 1 fold
+    # epoch and step size modi
     gpu_idx = 2
     train_batch_size = 2
 

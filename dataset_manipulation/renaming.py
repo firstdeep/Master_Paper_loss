@@ -4,35 +4,32 @@ from shutil import copyfile, move
 import cv2
 import natsort
 
-mask_dir = '/home/bh/Desktop/AAA_DATA_NEW/512/mask'
-raw_dir = '/home/bh/Desktop/AAA_DATA_NEW/512/raw'
+mask_dir = '/home/bh/Downloads/0906_modify_window_contrast/ROI/'
+raw_dir = '/home/bh/Downloads/0906_modify_window_contrast/RAW_PNG/'
 
-mask_dst_dir = '/home/bh/Desktop/0826_Data/512/mask_all'
-raw_dst_dir = '/home/bh/Desktop/0826_Data/512/raw_all'
+mask_dst_dir = '/home/bh/Downloads/0906_modify_window_contrast/0906_rename_for_bh/mask_all/'
+raw_dst_dir = '/home/bh/Downloads/0906_modify_window_contrast/0906_rename_for_bh/raw_all/'
 
 list_folder = natsort.natsorted(os.listdir(mask_dir))
-list_folder.pop()
 
 count = 1
 
 # file_name = natsort.natsorted(os.listdir(os.path.join(mask_dir, "35882023_1")))
 
-
 for folder_idx in list_folder:
+    if folder_idx == '.DS_Store': continue
+
     print(folder_idx)
     sub_mask_path = os.path.join(mask_dir, folder_idx)
     sub_raw_path = os.path.join(raw_dir, folder_idx)
 
     list_file = natsort.natsorted(os.listdir(sub_mask_path))
-    # if folder_idx =="00302843_1" or folder_idx=="05860383_1" or folder_idx =="35694633_1": list_file.pop()
 
     for list_idx in list_file:
-        if len(list_idx) < 20:
-            continue
+        if list_idx == '.DS_Store': continue
 
         split_idx = list_idx.split('_')
         rename = str(count) +"_"+ split_idx[3]
-        # print(rename)
 
         copyfile(os.path.join(sub_mask_path, list_idx), os.path.join(mask_dst_dir, rename))
         copyfile(os.path.join(sub_raw_path, split_idx[0]+'_'+split_idx[1]+'_'+split_idx[3]), os.path.join(raw_dst_dir, rename))
