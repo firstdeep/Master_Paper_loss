@@ -18,10 +18,11 @@ if __name__ =="__main__":
     #         f.write(str(file_path)+'\n')
     #     f.close()
 
-    file_path = '/home/bh/digits/for_detectnet/test/New Empty File1'
-    dst_path = '/home/bh/digits/for_detectnet/test/'
-    img_path = os.path.join(dst_path, 'fold2_test')
 
+    file_path = '/home/bh/digits/for_detectnet/test/fold_4_result.txt'
+    dst_path = '/home/bh/digits/for_detectnet/test/'
+
+    img_path = os.path.join(dst_path, 'fold4_test')
     img_list = natsort.natsorted(os.listdir(img_path))
 
     f = open(file_path, 'r')
@@ -43,15 +44,17 @@ if __name__ =="__main__":
 
 
     f.close()
+    print(len(total_list))
     total_list = np.array(total_list)
-    np.save(os.path.join(dst_path, 'fold2_test.npy'), total_list)
+    np.save(os.path.join(dst_path, 'fold4_result_0909.npy'), total_list)
 
-    fold2_test_npy = np.load(os.path.join(dst_path, 'fold2_test.npy'))
+    # # length * 4(top[x,y], bottom[x,y])
+    # fold2_test_npy = np.load(os.path.join(dst_path, 'fold2_test.npy'))
 
 
     for idx, img_idx in enumerate(img_list):
         img = cv2.imread(os.path.join(img_path, img_idx), cv2.IMREAD_COLOR)
-        bbox = fold2_test_npy[idx]
+        bbox = total_list[idx]
         cv2.rectangle(img, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0,255,0),3)
 
-        cv2.imwrite(os.path.join(dst_path, 'result', img_idx), img)
+        cv2.imwrite(os.path.join(dst_path, 'fold4_rec', img_idx), img)

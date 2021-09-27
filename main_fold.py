@@ -200,7 +200,7 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
                     prediction = model([img.to(device)])
 
                 if (list(prediction[0]['boxes'].shape)[0] == 0):
-                    mask = np.zeros((256, 256), dtype=np.uint8)
+                    mask = np.zeros((512, 512), dtype=np.uint8)
                 else:
                     mask = Image.fromarray(prediction[0]['masks'][0, 0].mul(255).byte().cpu().numpy())
 
@@ -381,6 +381,6 @@ if __name__ == '__main__':
     print("Batch size: " + str(train_batch_size))
     print("*" * 50)
 
-    main('train', model_path_name, gpu_idx, train_batch_size)
-    # main('test', model_path_name, gpu_idx)
+    # main('train', model_path_name, gpu_idx, train_batch_size)
+    main('test', model_path_name, gpu_idx)
     # main('detection', model_path_name)

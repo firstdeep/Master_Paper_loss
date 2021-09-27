@@ -8,15 +8,15 @@ if __name__ == "__main__":
     #       MAIN        #
     #####################
 
-    mask_path = '/home/bh/Desktop/AAA_DATA_NEW/256/mask_all'
+    mask_path = '/home/bh/Downloads/0906_modify_full_contrast/0906_rename_for_bh//mask_all'
     file_list = natsort.natsorted(os.listdir(mask_path))
 
-    data_arr = np.zeros((51,3))
+    data_arr = np.zeros((60,3)) # 0: number of mask images about subject, 1: mask start point, 2. mask finish point
 
-    subject_idx = np.arange(1,52)
+    subject_idx = np.arange(1,61)
 
-    count = 0
-    total_count = 0
+    count = 0 # mask count
+    total_count = 0 # subject count
 
     file_pos_list = []
     total_pos_num_list = []
@@ -35,6 +35,7 @@ if __name__ == "__main__":
                 if pos_check == 2:
                     count = count+1
                     file_pos_list.append(num)
+
         if (file_pos_list[-1]-file_pos_list[0]+1) != len(file_pos_list):
             print("=== ERROR ===")
             print(sub_idx)
@@ -49,7 +50,7 @@ if __name__ == "__main__":
         total_count = 0
         file_pos_list = []
 
-np.save("./GT",data_arr)
+np.save("./GT_512.npy",data_arr)
 print("*"*50)
 print(data_arr)
 print(total_pos_num_list)

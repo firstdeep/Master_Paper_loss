@@ -5,20 +5,20 @@ if __name__ =="__main__":
 
     # real world We dont know GT value
     # So we make function and check
-    gt_data = np.load("./dataset_manipulation/GT.npy")
-    pred_data = np.load("./dataset_manipulation/predict_default_15.npy")
-    # pred_data = np.load("./dataset_manipulation/predict_rpn_1.npy")
-    # pred_data = np.load("./dataset_manipulation/predict_fd.npy")
+    gt_data = np.load("./dataset_manipulation/GT_512.npy")
+    pred_data = np.load("./dataset_manipulation/predict_detectnet_512.npy")
 
-    subject = np.arange(1, 52)
+
+    subject = np.arange(1, 61)
 
     total_rate = []
     total_fn = []
     total_fp = []
 
-    mini_slice_num = 9
+    mini_slice_num = 8
 
     for sub_idx in subject:
+
         flag = 0
 
         sub_total_len = int(gt_data[(sub_idx-1), 0])
@@ -30,8 +30,13 @@ if __name__ =="__main__":
         gt_np[sub_start:sub_finish+1] = 1
 
         pred_np = pred_data[(sub_idx-1), :sub_total_len]
-        num_pred = pred_np.sum()
-
+        num_pred = int(pred_np.sum())
+        if num_pred == 0:
+            print("=== Model Do not detected anything %d ==="%(sub_idx))
+            total_rate.append(0)
+            total_fn.append(0)
+            total_fp.append(0)
+            continue
         ###############################
         #   preprocessing using pred  #
         ###############################
@@ -55,23 +60,26 @@ if __name__ =="__main__":
                         temp_list = pred_seg_idx
                         flag=1
                     else:
-                        if flag == 1:
-                            temp_list.extend(pred_seg_idx)
-                            sorted(temp_list)
-                            flag = 0
-
-                        elif len(temp_list) < len(pred_seg_idx):
+                        # if flag == 1:
+                        #     temp_list.extend(pred_seg_idx)
+                        #     sorted(temp_list)
+                        #     flag = 0
+                        #
+                        # elif len(temp_list) < len(pred_seg_idx):
+                        #     temp_list = pred_seg_idx
+                        if len(temp_list) < len(pred_seg_idx):
                             temp_list = pred_seg_idx
+
                     pred_seg_idx = []
                 else:
                     pred_seg_idx = []
 
                 pred_seg_idx.append(start_point)
 
-        # condition with "1" subject
-        if len(temp_list) > mini_slice_num and len(pred_seg_idx) > mini_slice_num:
-            temp_list.extend(pred_seg_idx)
-            sorted(temp_list)
+        # # condition with "1" subject
+        # if len(temp_list) > mini_slice_num and len(pred_seg_idx) > mini_slice_num:
+        #     temp_list.extend(pred_seg_idx)
+        #     sorted(temp_list)
 
         # No more than 1 difference between start and finish
         if len(temp_list) < len(pred_seg_idx):
@@ -108,4 +116,3 @@ if __name__ =="__main__":
 
     print("total_rate = %.2f%%, total_fn = %.2f%%, total_fp = %.2f%%"%((sum(total_rate)/len(total_rate)), (sum(total_fn)/len(total_fn)), (sum(total_fp)/len(total_fp))))
     # print("total_fn = %.2f%%, total_fp = %.2f%%"%((sum(total_fn)/len(total_fn)), (sum(total_fp)/len(total_fp))))
-    print(((sum(total_fn)/len(total_fn)) + (sum(total_fp)/len(total_fp))) / 2)
