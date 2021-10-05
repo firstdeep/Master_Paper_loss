@@ -10,7 +10,7 @@ import transforms as T
 from torchvision.transforms import functional as F
 from sklearn.model_selection import KFold
 from torchvision.models.detection import roi_heads
-from torchsummary import summary as summary_
+# from torchsummary import summary as summary_
 import natsort
 
 from gil_eval import *
@@ -28,37 +28,37 @@ def get_instance_segmentation_model(num_classes):
 
     # now get the number of input features for the mask classifier
     in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
-    hidden_layer = 256
+    hidden_layer = 512
     # and replace the mask predictor with a new one
     model.roi_heads.mask_predictor = MaskRCNNPredictor(in_features_mask,
                                                        hidden_layer,
                                                        num_classes)
 
-    model.roi_heads.mask_unet = mask_unet()
+    # model.roi_heads.mask_unet = mask_unet()
     return model
 
 
-def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
+def main(mode, model_path_name, gpu_idx=0, train_batch_size=1, raw_path=''):
 
 
     GPU_NUM = gpu_idx
     fold_num = 4
     device = torch.device(f'cuda:{GPU_NUM}') if torch.cuda.is_available() else torch.device('cpu')
 
-    # raw_path = 'data/update/all'
-    # raw_path = 'data/update/pos'
-    raw_path = 'data/09_new'
+
 
     total_dataset = GilAAADataset(raw_path, get_transform(train=True))
     total_dataset_test = GilAAADataset(raw_path, get_transform(train=False))
 
     ################################
-    # Modify subject range
-    total_subject = list(range(1,52))
+    # Modify number of subjects
+    total_subject = list(range(1,61))
+    ################################
+
     kfold = KFold(n_splits=fold_num, shuffle=False)
 
     for fold, (train_ids, test_ids) in enumerate(kfold.split(total_subject)):
-        if fold!=0:
+        if fold==0 or fold==1 or fold==2:
             continue
 
         for index, value in enumerate(test_ids):
@@ -117,6 +117,7 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
             # construct an optimizer
             params = [p for p in model.parameters() if p.requires_grad]
 
+            # Default optimizer
             optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
             # optimizer = torch.optim.Adam(params, lr=0.001)
             # optimizer = torch.optim.RMSprop(params, lr=0.0002)
@@ -143,9 +144,13 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
                 # lr_scheduler.step(val_loss)
                 lr_scheduler.step()
 
+                # if((epoch+1)%10 == 0):
                 if((epoch+1)%10 == 0):
-                    torch.save(model.state_dict(), './pretrained/256_s_fold_%d_%s.pth' % (fold, model_path_name))
-                    torch.save(dataset_test, './pretrained/256_s_test_fold_%d_%s.pth' % (fold, model_path_name))
+                    if not os.path.exists("./pretrained/%s" % (model_path_name)):
+                        os.mkdir("./pretrained/%s" % (model_path_name))
+
+                    torch.save(model.state_dict(), './pretrained/%s/512_fold_%d_%s.pth' % (model_path_name, fold, model_path_name))
+                    torch.save(dataset_test, './pretrained/%s/512_test_fold_%d_%s.pth' % (model_path_name, fold, model_path_name))
 
     if 'test' in mode:
         print("*"*25)
@@ -154,12 +159,12 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
         print("\n")
         print("*" * 25)
 
-        if not os.path.exists("/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/"%(model_path_name)):
-            os.mkdir("/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/"%(model_path_name))
-        if not os.path.exists('/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/result_analysis/'%(model_path_name)):
-            os.mkdir("/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/result_analysis/"%(model_path_name))
-        save_dir = '/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/'%(model_path_name)
-        save_dir_analysis = '/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/result_analysis/'%(model_path_name)
+        if not os.path.exists("/home/airlab/PycharmProjects/aaa_segmentation/data_visualization/result_%s/"%(model_path_name)):
+            os.mkdir("/home/airlab/PycharmProjects/aaa_segmentation/data_visualization/result_%s/"%(model_path_name))
+        if not os.path.exists('/home/airlab/PycharmProjects/aaa_segmentation/data_visualization/result_%s/result_analysis/'%(model_path_name)):
+            os.mkdir("/home/airlab/PycharmProjects/aaa_segmentation/data_visualization/result_%s/result_analysis/"%(model_path_name))
+        save_dir = '/home/airlab/PycharmProjects/aaa_segmentation/data_visualization/result_%s/'%(model_path_name)
+        save_dir_analysis = '/home/airlab/PycharmProjects/aaa_segmentation/data_visualization/result_%s/result_analysis/'%(model_path_name)
 
         total_ol = []
         total_ja = []
@@ -168,8 +173,8 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
         total_fn = []
 
         for fold, (train_ids, test_ids) in enumerate(kfold.split(total_subject)):
-            if fold!= 0:
-                continue
+            # if fold!= 0:
+            #     continue
 
             for index, value in enumerate(test_ids):
                 test_ids[index] = value + 1
@@ -180,9 +185,9 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
             fold_fp = []
             fold_fn = []
 
-            model.load_state_dict(torch.load('./pretrained/256_s_fold_%d_%s.pth'%(fold,model_path_name)))
+            model.load_state_dict(torch.load('./pretrained/%s/512_fold_%d_%s.pth'%(model_path_name, fold,model_path_name)))
             # test_path = "0815_update_all"
-            dataset_test = torch.load('./pretrained/256_s_test_fold_%d_%s.pth'%(fold,model_path_name))
+            dataset_test = torch.load('./pretrained/%s/512_test_fold_%d_%s.pth'%(model_path_name, fold,model_path_name))
 
             num_test = len(dataset_test.indices)
 
@@ -268,12 +273,12 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
         print("\t\tDetection ...")
         print("\n")
         print("*" * 25)
-        shape = (53,1)
+        shape = (60,1)
         total_list = np.zeros(shape)
         total_list = list(total_list)
 
         gt_path = os.path.join(raw_path, "mask")
-        pred_path = '/home/bh/Downloads/aaa_segmentation/0803/result_%s/'%(model_path_name)
+        pred_path = "./data_visualization/result_%s/"%(model_path_name)
 
         list_file = natsort.natsorted(os.listdir(gt_path))
 
@@ -340,39 +345,17 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
 
 if __name__ == '__main__':
 
-    # model_path_name = "0819_update_all"
-    # model_path_name = "0819_update_all_FD"
-    # model_path_name = "0819_update_all_rpn_1"
-    # model_path_name = "0819_update_all_rpn_2"
-    # model_path_name = "0819_update_all_rpn_3"
-    # model_path_name = "0823_fd_rpn"
+    # model_path_name = "0928_default_full"
 
-    # model_path_name = "0824_fd_rpn_1_1"
-    # model_path_name = "0824_fd_rpn_2_1"
-    # model_path_name = "0824_fd_rpn_3_1"
-
-    # model_path_name = "0824_fd_rpn_1_0.5"
-    # model_path_name = "0824_fd_rpn_2_0.5"
-    # model_path_name = "0824_fd_rpn_3_0.5"
-
-    # model_path_name = "maskunet_28_default"
-    # model_path_name = "maskunet_28_default_20_5"
-    # model_path_name = "maskunet_16_default"
-    # model_path_name = "maskunet_36_default"
-    # model_path_name = "maskunet_36_base"
-
-    # model_path_name = "maskunet_16_default_20_5"
-    # model_path_name = "maskrcnn_default"
-    # model_path_name = "maskrcnn_default_20_5"
-    # model_path_name = "maskrcnn36"
-    # model_path_name = "maskrcnn16"
-    # model_path_name = "maskrcnn28"
-
-    model_path_name = "new_data_default"
+    # model_path_name = "1005_rpn_0.5"
+    model_path_name = "1005_rpn_1"
+    # model_path_name = "1005_rpn_1.5"
+    # model_path_name = "1005_rpn_seg"
 
 
-    # Now: Only use 1 fold
-    # epoch and step size modi
+    raw_path = 'data/full'
+    # raw_path = 'data/window'
+
     gpu_idx = 2
     train_batch_size = 2
 
@@ -381,6 +364,6 @@ if __name__ == '__main__':
     print("Batch size: " + str(train_batch_size))
     print("*" * 50)
 
-    # main('train', model_path_name, gpu_idx, train_batch_size)
-    main('test', model_path_name, gpu_idx)
-    # main('detection', model_path_name)
+    main('train', model_path_name, gpu_idx, train_batch_size, raw_path)
+    # main('test', model_path_name, gpu_idx, train_batch_size, raw_path)
+    # main('detection', model_path_name, raw_path)
