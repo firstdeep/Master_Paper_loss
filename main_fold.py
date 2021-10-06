@@ -356,7 +356,7 @@ if __name__ == '__main__':
     raw_path = 'data/full'
     # raw_path = 'data/window'
 
-    gpu_idx = 2
+    gpu_idx = 3
     train_batch_size = 2
 
     print("*"*50)
