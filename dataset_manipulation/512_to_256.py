@@ -4,11 +4,11 @@ from shutil import copyfile, move
 import cv2
 import natsort
 
-mask_dir = '/home/bh/Desktop/0826_Data/512/mask_pos'
-raw_dir = '/home/bh/Desktop/0826_Data/512/raw_pos'
+mask_dir = '/home/bh/Downloads/data_2111/mask/'
+raw_dir = '/home/bh/Downloads/data_2111/rawin/'
 
-mask_dst_dir = '/home/bh/Desktop/0826_Data/256/mask_pos'
-raw_dst_dir = '/home/bh/Desktop/0826_Data/256/raw_pos'
+mask_dst_dir = '/home/bh/Downloads/data_2111/mask_256/'
+raw_dst_dir = '/home/bh/Downloads/data_2111/rawin_256/'
 
 
 list_file = natsort.natsorted(os.listdir(mask_dir))

@@ -8,15 +8,15 @@ if __name__ == "__main__":
     #       MAIN        #
     #####################
 
-    mask_path = '/home/bh/Downloads/0906_modify_window_contrast/0906_rename_for_bh/mask_all/'
-    raw_path = '/home/bh/Downloads/0906_modify_window_contrast/0906_rename_for_bh/raw_all/'
+    mask_path = '/home/bh/Downloads/data_2111/blood/'
+    raw_path = '/home/bh/Downloads/data_2111/raw/'
 
-    mask_dst_path = '/home/bh/Downloads/0906_modify_window_contrast/0906_rename_for_bh/mask_pos/'
-    raw_dst_path = '/home/bh/Downloads/0906_modify_window_contrast/0906_rename_for_bh/raw_pos/'
+    mask_dst_path = '/home/bh/Downloads/data_2111/blood_pos/'
+    raw_dst_path = '/home/bh/Downloads/data_2111/raw_blood_pos/'
 
     file_list = natsort.natsorted(os.listdir(mask_path))
 
-    subject_idx = np.arange(1,61)
+    subject_idx = np.arange(1,51)
 
     for sub_idx in subject_idx:
         print(sub_idx)
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
                 mask_uniq = np.unique(mask)
                 if len(mask_uniq) == 2:
-                    print(mask_uniq)
+                    # print(mask_uniq)
                     cv2.imwrite(os.path.join(mask_dst_path, file_idx), mask)
                     cv2.imwrite(os.path.join(raw_dst_path, file_idx), raw)
 

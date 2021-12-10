@@ -44,164 +44,214 @@ def fit_ellipse(mask):
 
     return bigger_pixel_rect, int(bigger_pixel_ellip)
 
+def make_prediction_file(save_dir):
+    #####################
+    #       MAIN        #
+    #####################
 
+    mask_path = save_dir
+
+    # GT
+    # mask_path = '/home/bh/Desktop/AAA_DATA_NEW/256/mask_all'
+
+    file_list = natsort.natsorted(os.listdir(mask_path))
+    file_list.pop()
+
+    data_arr = np.zeros((50, 300))
+
+    subject_idx = np.arange(1, 51)
+
+    count = 0
+
+    for sub_idx in subject_idx:
+        ellipse = []
+        # print(sub_idx)
+        for file_idx in file_list:
+
+            idx_split = file_idx.split('_')
+            num = int(idx_split[1].split('.')[0])
+
+            if int(idx_split[0]) == sub_idx:
+                mask = cv2.imread(os.path.join(mask_path, file_idx), cv2.IMREAD_GRAYSCALE)
+                # Check positive sample
+                pos_check = int(len(np.unique(mask)))
+
+                if pos_check == 2:
+                    data_arr[(sub_idx - 1), count] = 1
+
+                    # ### ellipse check
+                    # rect, ellip_diameter = fit_ellipse(mask)
+                    # ellipse.append(ellip_diameter)
+                    #
+                    # if ellip_diameter >=18:
+                    #     data_arr[(sub_idx-1),count] = 1
+
+                count = count + 1
+        # print(data_arr[(sub_idx-1)])
+        # print(ellipse)
+        count = 0
+
+
+    np.save("./predict_default", data_arr)
+    print("*" * 50)
+    print("==== Done ====")
 
 if __name__ == "__main__":
-#     #####################
-#     #       MAIN        #
-#     #####################
-#
-#     mask_path = '/home/bh/Downloads/aaa_segmentation/0803/result_0819_update_all/'
-#
-#     # GT
-#     # mask_path = '/home/bh/Desktop/AAA_DATA_NEW/256/mask_all'
-#
-#     file_list = natsort.natsorted(os.listdir(mask_path))
-#     file_list.pop()
-#
-#     data_arr = np.zeros((51,300))
-#
-#     subject_idx = np.arange(1,52)
-#
-#     count = 0
-#
-#     for sub_idx in subject_idx:
-#         ellipse = []
-#         print(sub_idx)
-#         for file_idx in file_list:
-#
-#             idx_split = file_idx.split('_')
-#             num = int(idx_split[1].split('.')[0])
-#
-#             if int(idx_split[0]) == sub_idx:
-#                 mask = cv2.imread(os.path.join(mask_path, file_idx), cv2.IMREAD_GRAYSCALE)
-#                 # Check positive sample
-#                 pos_check = int(len(np.unique(mask)))
-#
-#                 if pos_check == 2:
-#                     print(file_idx)
-#                     if file_idx == "1_0070.png" or file_idx == "2_0067.png":
-#                         continue
-#                     rect, ellip_diameter = fit_ellipse(mask)
-#                     ### ellipse check
-#                     ellipse.append(ellip_diameter)
-#
-#                     if ellip_diameter >=18:
-#                         data_arr[(sub_idx-1),count] = 1
-#
-#                 count = count + 1
-#         # print(data_arr[(sub_idx-1)])
-#         # print(ellipse)
-#         count = 0
-#
-#
-# np.save("./predict_default_18",data_arr)
-# print("*"*50)
-# print("==== Done ====")
+    #####################
+    #       MAIN        #
+    #####################
+
+    mask_path = '/home/bh/Downloads/aaa_segmentation/data_visualization/result_211123_blood_dafault/'
+
+    # GT
+    # mask_path = '/home/bh/Desktop/AAA_DATA_NEW/256/mask_all'
+
+    file_list = natsort.natsorted(os.listdir(mask_path))
+    file_list.pop()
+
+    data_arr = np.zeros((50,300))
+
+    subject_idx = np.arange(1,51)
+
+    count = 0
+
+    for sub_idx in subject_idx:
+        ellipse = []
+        print(sub_idx)
+        for file_idx in file_list:
+
+            idx_split = file_idx.split('_')
+            num = int(idx_split[1].split('.')[0])
+
+            if int(idx_split[0]) == sub_idx:
+                mask = cv2.imread(os.path.join(mask_path, file_idx), cv2.IMREAD_GRAYSCALE)
+                # Check positive sample
+                pos_check = int(len(np.unique(mask)))
+
+                if pos_check == 2:
+
+                    data_arr[(sub_idx - 1), count] = 1
+
+                    # ### ellipse check
+                    # rect, ellip_diameter = fit_ellipse(mask)
+                    # ellipse.append(ellip_diameter)
+                    #
+                    # if ellip_diameter >=18:
+                    #     data_arr[(sub_idx-1),count] = 1
+
+                count = count + 1
+        # print(data_arr[(sub_idx-1)])
+        # print(ellipse)
+        count = 0
+
+
+    np.save("./predict_default",data_arr)
+    print("*"*50)
+    print("==== Done ====")
 
 #####################
 #       MAIN        #
 #####################
 
-    # mask_path = '/home/bh/Downloads/aaa_segmentation/0803/result_0819_update_all/'
-
-    npy_path = "/home/bh/digits/for_detectnet/test"
-
-    fold1 = np.load(os.path.join(npy_path,'fold1_result_0909.npy'))
-    fold2 = np.load(os.path.join(npy_path,'fold2_result_0909.npy'))
-    fold3 = np.load(os.path.join(npy_path,'fold3_result_0909.npy'))
-    fold4 = np.load(os.path.join(npy_path,'fold4_result_0909.npy'))
-
-    fold1_list = natsort.natsorted(os.listdir(os.path.join(npy_path, "fold1_test")))
-    fold2_list = natsort.natsorted(os.listdir(os.path.join(npy_path, "fold2_test")))
-    fold3_list = natsort.natsorted(os.listdir(os.path.join(npy_path, "fold3_test")))
-    fold4_list = natsort.natsorted(os.listdir(os.path.join(npy_path, "fold4_test")))
-
-    data_arr = np.zeros((60, 400))
-
-    subject_idx1 = np.arange(1, 16)
-    subject_idx2 = np.arange(16, 31)
-    subject_idx3 = np.arange(31, 46)
-    subject_idx4 = np.arange(46, 61)
-
-    count = 0
-
-    for sub_idx in subject_idx1:
-        # print(sub_idx)
-        for idx, file_idx in enumerate(fold1_list):
-
-            idx_split = file_idx.split('_')
-            num = int(idx_split[1].split('.')[0])
-
-            if int(idx_split[0]) == sub_idx:
-
-                bbox = fold1[idx]
-
-                if sum(bbox) != 0:
-                    print(file_idx)
-                    data_arr[(sub_idx - 1), count] = 1
-
-                count = count + 1
-
-        count = 0
-
-    for sub_idx in subject_idx2:
-        # print(sub_idx)
-        for idx, file_idx in enumerate(fold2_list):
-
-            idx_split = file_idx.split('_')
-            num = int(idx_split[1].split('.')[0])
-
-            if int(idx_split[0]) == sub_idx:
-
-                bbox = fold2[idx]
-
-                if sum(bbox) != 0:
-                    print(file_idx)
-                    data_arr[(sub_idx - 1), count] = 1
-
-                count = count + 1
-
-        count = 0
-
-    for sub_idx in subject_idx3:
-        # print(sub_idx)
-        for idx, file_idx in enumerate(fold3_list):
-
-            idx_split = file_idx.split('_')
-            num = int(idx_split[1].split('.')[0])
-
-            if int(idx_split[0]) == sub_idx:
-
-                bbox = fold3[idx]
-
-                if sum(bbox) != 0:
-                    print(file_idx)
-                    data_arr[(sub_idx - 1), count] = 1
-
-                count = count + 1
-
-        count = 0
-
-    for sub_idx in subject_idx4:
-        # print(sub_idx)
-        for idx, file_idx in enumerate(fold4_list):
-
-            idx_split = file_idx.split('_')
-            num = int(idx_split[1].split('.')[0])
-
-            if int(idx_split[0]) == sub_idx:
-
-                bbox = fold4[idx]
-
-                if sum(bbox) != 0:
-                    print(file_idx)
-                    data_arr[(sub_idx - 1), count] = 1
-
-                count = count + 1
-
-        count = 0
-
-    np.save("./predict_detectnet_512", data_arr)
-    print("*" * 50)
-    print("==== Done ====")
+    # # mask_path = '/home/bh/Downloads/aaa_segmentation/0803/result_0819_update_all/'
+    #
+    # npy_path = "/home/bh/digits/for_detectnet/test"
+    #
+    # fold1 = np.load(os.path.join(npy_path,'fold1_result_0909.npy'))
+    # fold2 = np.load(os.path.join(npy_path,'fold2_result_0909.npy'))
+    # fold3 = np.load(os.path.join(npy_path,'fold3_result_0909.npy'))
+    # fold4 = np.load(os.path.join(npy_path,'fold4_result_0909.npy'))
+    #
+    # fold1_list = natsort.natsorted(os.listdir(os.path.join(npy_path, "fold1_test")))
+    # fold2_list = natsort.natsorted(os.listdir(os.path.join(npy_path, "fold2_test")))
+    # fold3_list = natsort.natsorted(os.listdir(os.path.join(npy_path, "fold3_test")))
+    # fold4_list = natsort.natsorted(os.listdir(os.path.join(npy_path, "fold4_test")))
+    #
+    # data_arr = np.zeros((60, 400))
+    #
+    # subject_idx1 = np.arange(1, 16)
+    # subject_idx2 = np.arange(16, 31)
+    # subject_idx3 = np.arange(31, 46)
+    # subject_idx4 = np.arange(46, 61)
+    #
+    # count = 0
+    #
+    # for sub_idx in subject_idx1:
+    #     # print(sub_idx)
+    #     for idx, file_idx in enumerate(fold1_list):
+    #
+    #         idx_split = file_idx.split('_')
+    #         num = int(idx_split[1].split('.')[0])
+    #
+    #         if int(idx_split[0]) == sub_idx:
+    #
+    #             bbox = fold1[idx]
+    #
+    #             if sum(bbox) != 0:
+    #                 print(file_idx)
+    #                 data_arr[(sub_idx - 1), count] = 1
+    #
+    #             count = count + 1
+    #
+    #     count = 0
+    #
+    # for sub_idx in subject_idx2:
+    #     # print(sub_idx)
+    #     for idx, file_idx in enumerate(fold2_list):
+    #
+    #         idx_split = file_idx.split('_')
+    #         num = int(idx_split[1].split('.')[0])
+    #
+    #         if int(idx_split[0]) == sub_idx:
+    #
+    #             bbox = fold2[idx]
+    #
+    #             if sum(bbox) != 0:
+    #                 print(file_idx)
+    #                 data_arr[(sub_idx - 1), count] = 1
+    #
+    #             count = count + 1
+    #
+    #     count = 0
+    #
+    # for sub_idx in subject_idx3:
+    #     # print(sub_idx)
+    #     for idx, file_idx in enumerate(fold3_list):
+    #
+    #         idx_split = file_idx.split('_')
+    #         num = int(idx_split[1].split('.')[0])
+    #
+    #         if int(idx_split[0]) == sub_idx:
+    #
+    #             bbox = fold3[idx]
+    #
+    #             if sum(bbox) != 0:
+    #                 print(file_idx)
+    #                 data_arr[(sub_idx - 1), count] = 1
+    #
+    #             count = count + 1
+    #
+    #     count = 0
+    #
+    # for sub_idx in subject_idx4:
+    #     # print(sub_idx)
+    #     for idx, file_idx in enumerate(fold4_list):
+    #
+    #         idx_split = file_idx.split('_')
+    #         num = int(idx_split[1].split('.')[0])
+    #
+    #         if int(idx_split[0]) == sub_idx:
+    #
+    #             bbox = fold4[idx]
+    #
+    #             if sum(bbox) != 0:
+    #                 print(file_idx)
+    #                 data_arr[(sub_idx - 1), count] = 1
+    #
+    #             count = count + 1
+    #
+    #     count = 0
+    #
+    # np.save("./predict_detectnet_512", data_arr)
+    # print("*" * 50)
+    # print("==== Done ====")

@@ -8,7 +8,7 @@ if __name__ == "__main__":
     #       MAIN        #
     #####################
 
-    mask_path = '/home/airlab/PycharmProjects/aaa_segmentation/data/full/mask'
+    mask_path = '/home/bh/Downloads/0906_modify_full_contrast/0906_rename_for_bh//mask_all'
     file_list = natsort.natsorted(os.listdir(mask_path))
 
     data_arr = np.zeros((60,3)) # 0: number of mask images about subject, 1: mask start point, 2. mask finish point

@@ -82,8 +82,8 @@ class GilAAADataset(torch.utils.data.Dataset):
             for i in range(num_objs):
                 pos = np.where(masks[i])
                 xmin = np.min(pos[1]) -5
-                xmax = np.max(pos[1]) +5
                 ymin = np.min(pos[0]) -5
+                xmax = np.max(pos[1]) +5
                 ymax = np.max(pos[0]) +5
                 boxes.append([xmin, ymin, xmax, ymax])
 

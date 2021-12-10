@@ -9,7 +9,6 @@ import cv2
 import transforms as T
 from torchvision.transforms import functional as F
 from sklearn.model_selection import KFold
-import pandas as pd
 
 from gil_eval import *
 

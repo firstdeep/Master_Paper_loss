@@ -69,10 +69,13 @@ class mask_unet(nn.Module):
         enc3_1 = self.enc3_1(pool2)
 
         dec3_1 = self.dec3_1(enc3_1)
-
+        print(dec3_1.shape)
         unpool2 = self.unpool2(dec3_1)
+        print(unpool2.shape)
         cat2 = torch.cat((enc2_2, unpool2), dim=1)
+        print(cat2.shape)
         dec2_2 = self.dec2_2(cat2)
+        print(dec2_2.shape)
         dec2_1 = self.dec2_1(dec2_2)
 
         unpool1 = self.unpool1(dec2_1)
