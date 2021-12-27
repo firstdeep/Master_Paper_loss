@@ -48,7 +48,8 @@ def eval_segmentation(src, tgt):
 
 def eval_segmentation_volume(save_dir, subject, data_path, start_finish=[]):
 
-    np_predict_list = np.arange(start_finish[0], start_finish[1]+1)
+    if len(start_finish)!=0:
+        np_predict_list = np.arange(start_finish[0], start_finish[1]+1)
 
     # mask file load
     pred_path = save_dir
@@ -72,8 +73,9 @@ def eval_segmentation_volume(save_dir, subject, data_path, start_finish=[]):
             pred_slice = (np.array(pred_slice) / 255.0).astype(np.uint32)
 
             #### 21.12.01
-            if int(i) not in np_predict_list:
-                pred_slice = np.zeros((np.shape(pred_slice)[0],np.shape(pred_slice)[1]), dtype=type(pred_slice))
+            if len(start_finish) != 0:
+                if int(i) not in np_predict_list:
+                    pred_slice = np.zeros((np.shape(pred_slice)[0],np.shape(pred_slice)[1]), dtype=type(pred_slice))
 
             # print(list(set(np.ravel(pred_slice))))
             # print(list(set(np.ravel(gt_slice))))

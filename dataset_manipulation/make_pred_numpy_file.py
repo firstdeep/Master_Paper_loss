@@ -101,7 +101,7 @@ if __name__ == "__main__":
     #       MAIN        #
     #####################
 
-    mask_path = '/home/bh/Downloads/aaa_segmentation/data_visualization/result_211123_blood_dafault/'
+    mask_path = '/home/bh/Downloads/aaa_segmentation/data_visualization/result_1220_default/'
 
     # GT
     # mask_path = '/home/bh/Desktop/AAA_DATA_NEW/256/mask_all'
@@ -109,9 +109,9 @@ if __name__ == "__main__":
     file_list = natsort.natsorted(os.listdir(mask_path))
     file_list.pop()
 
-    data_arr = np.zeros((50,300))
+    data_arr = np.zeros((60,300))
 
-    subject_idx = np.arange(1,51)
+    subject_idx = np.arange(1,61)
 
     count = 0
 

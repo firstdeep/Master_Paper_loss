@@ -10,6 +10,8 @@ from torchvision.transforms import functional as F
 # from engine import train_one_epoch, evaluate
 # import utils
 import transforms as T
+import cv2
+
 
 def get_transform(train):
     transforms = []
@@ -44,7 +46,7 @@ class GilAAADataset(torch.utils.data.Dataset):
         # because each color corresponds to a different instance
         # with 0 being background
 
-        mask = Image.open(mask_path)
+        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
 
         mask = np.array(mask) / 255
         mask = mask.astype(np.uint8) # 0 ~ 255

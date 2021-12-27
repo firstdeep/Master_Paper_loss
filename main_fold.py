@@ -2,6 +2,8 @@ import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 from GilAAADataset import *
+from DicomDataset import *
+
 from engine import train_one_epoch, evaluate
 import utils
 import pickle
@@ -16,6 +18,18 @@ import natsort
 from gil_eval import *
 import random
 from unet import mask_unet
+from dataset_manipulation.make_pred_numpy_file import make_prediction_file
+from detection_eval import check_detection_rate
+
+def count_parameter(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+from dataset_manipulation.make_pred_numpy_file import make_prediction_file
+from detection_eval import check_detection_rate
+
+def count_parameter(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 
 def get_instance_segmentation_model(num_classes):
     # load an instance segmentation model pre-trained on COCO
@@ -38,23 +52,25 @@ def get_instance_segmentation_model(num_classes):
     return model
 
 
-def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
+def main(mode, model_path_name, gpu_idx=0, train_batch_size=1, raw_path=""):
 
 
     GPU_NUM = gpu_idx
     fold_num = 4
     device = torch.device(f'cuda:{GPU_NUM}') if torch.cuda.is_available() else torch.device('cpu')
 
-    # raw_path = 'data/update/all'
-    # raw_path = 'data/update/pos'
-    raw_path = 'data/09_new'
+    raw_path = raw_path
 
-    total_dataset = GilAAADataset(raw_path, get_transform(train=True))
-    total_dataset_test = GilAAADataset(raw_path, get_transform(train=False))
+    if 'dicom' in raw_path:
+        total_dataset = AAA_dicom(raw_path, get_transform(train=True))
+        total_dataset_test = AAA_dicom(raw_path, get_transform(train=False))
+    else:
+        total_dataset = GilAAADataset(raw_path, get_transform(train=True))
+        total_dataset_test = GilAAADataset(raw_path, get_transform(train=False))
 
     ################################
     # Modify subject range
-    total_subject = list(range(1,52))
+    total_subject = list(range(1, 61))
     kfold = KFold(n_splits=fold_num, shuffle=False)
 
     for fold, (train_ids, test_ids) in enumerate(kfold.split(total_subject)):
@@ -82,11 +98,11 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
         np.random.shuffle(indices1)
         np.random.shuffle(indices2)
 
-        valid_idx = random.sample(indices1, int(len(indices1)*0.1))
-        indices1 = [index for index in indices1 if index not in valid_idx]
+        # valid_idx = random.sample(indices1, int(len(indices1)*0.1))
+        # indices1 = [index for index in indices1 if index not in valid_idx]
 
         dataset = torch.utils.data.Subset(total_dataset, indices1)
-        dataset_valid = torch.utils.data.Subset(total_dataset_test, valid_idx)
+        # dataset_valid = torch.utils.data.Subset(total_dataset_test, valid_idx)
         dataset_test = torch.utils.data.Subset(total_dataset_test, indices2)
 
         # define training and validation data loaders
@@ -94,9 +110,9 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
             dataset, batch_size=train_batch_size, shuffle=True, num_workers=0,
             collate_fn=utils.collate_fn)
 
-        data_loader_valid = torch.utils.data.DataLoader(
-            dataset_valid, batch_size=1, shuffle=False, num_workers=0,
-            collate_fn=utils.collate_fn)
+        # data_loader_valid = torch.utils.data.DataLoader(
+        #     dataset_valid, batch_size=1, shuffle=False, num_workers=0,
+        #     collate_fn=utils.collate_fn)
 
         # our dataset has two classes only - background and ...
         num_classes = 2
@@ -125,7 +141,7 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
             # 10x every 3 epochs
             lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.1)
 
-            # lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=3, threshold=0.2)
+            # lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
 
             # let's train it for 10 epochs
             num_epochs = 10
@@ -135,12 +151,7 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
                 # train for one epoch, printing every 10 iterations
                 train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
 
-                # validation
-                # val_loss = evaluate(model, data_loader_valid, device=device)
-                # print(val_loss)
-
                 # update the learning rate
-                # lr_scheduler.step(val_loss)
                 lr_scheduler.step()
 
                 if((epoch+1)%10 == 0):
@@ -168,8 +179,8 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
         total_fn = []
 
         for fold, (train_ids, test_ids) in enumerate(kfold.split(total_subject)):
-            if fold!= 0:
-                continue
+            # if fold != 0:
+            #     continue
 
             for index, value in enumerate(test_ids):
                 test_ids[index] = value + 1
@@ -181,7 +192,6 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
             fold_fn = []
 
             model.load_state_dict(torch.load('./pretrained/256_s_fold_%d_%s.pth'%(fold,model_path_name)))
-            # test_path = "0815_update_all"
             dataset_test = torch.load('./pretrained/256_s_test_fold_%d_%s.pth'%(fold,model_path_name))
 
             num_test = len(dataset_test.indices)
@@ -190,10 +200,21 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
                 img_name = raw_path + '/raw/' + dataset_test.dataset.imgs[dataset_test.indices[i]]
                 mask_name = raw_path + '/mask/' + dataset_test.dataset.imgs[dataset_test.indices[i]]
 
-                img = Image.open(img_name).convert("RGB")
+                if 'dicom' in raw_path:
+                    mask_name = raw_path + '/mask/' + dataset_test.dataset.imgs[dataset_test.indices[i]].split('.')[0]+'.png'
+                    img = pydicom.dcmread(img_name)
+                    img = (img.pixel_array / 4095).astype(np.float32)
+                    img = torch.from_numpy(img).contiguous().type(torch.FloatTensor)
+                    img_rgb = (np.array(img) * 255).astype(np.uint8)
+                    img = img.unsqueeze(0)
+
+                else:
+                    img = Image.open(img_name)
+                    # img = Image.open(img_name).convert("RGB")
+                    img_rgb = np.array(img)
+                    img = F.to_tensor(img)
+
                 mask_gt = Image.open(mask_name).convert("RGB")
-                img_rgb = np.array(img)
-                img = F.to_tensor(img)
 
                 model.eval()
                 with torch.no_grad():
@@ -209,6 +230,7 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
                 img_mask[img_mask > 127] = 255
                 img_mask[img_mask <= 127] = 0
 
+                # img_gray = img_rgb
                 img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
 
                 img_gray_color = cv2.cvtColor(img_gray, cv2.COLOR_GRAY2BGR)
@@ -237,29 +259,44 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
 
                 img_all = np.concatenate([img_gray_color, add_img, red_gt, green_pred, img_overlap], axis=1)
 
-                cv2.imwrite(save_dir_analysis + dataset_test.dataset.imgs[dataset_test.indices[i]].replace('.png', '_maskrcnn.png'), img_all)
-                cv2.imwrite(save_dir + dataset_test.dataset.imgs[dataset_test.indices[i]], img_mask)
 
-            for subject in test_ids:
-                # print("Fold = %d, subject = %d"%(fold, subject))
-                overlap, jaccard, dice, fn, fp = eval_segmentation_volume(save_dir, str(subject), raw_path)
-                print(str(subject) + ' %.4f %.4f %.4f %.4f %.4f' % (overlap, jaccard, dice, fn, fp))
+                if 'dicom' in raw_path:
+                    all_img_file = dataset_test.dataset.imgs[dataset_test.indices[i]].split('.')[0]+'_maskrcnn.png'
+                    mask_file = dataset_test.dataset.imgs[dataset_test.indices[i]].split('.')[0] + '.png'
+                    cv2.imwrite(save_dir_analysis + all_img_file, img_all)
+                    cv2.imwrite(save_dir + mask_file, img_mask)
+                else:
+                    cv2.imwrite(save_dir_analysis + dataset_test.dataset.imgs[dataset_test.indices[i]].replace('.png', '_maskrcnn.png'), img_all)
+                    cv2.imwrite(save_dir + dataset_test.dataset.imgs[dataset_test.indices[i]], img_mask)
 
-                # print("=" * 50)
-                # print("\n")
-                fold_ol.append(overlap)
-                fold_ja.append(jaccard)
-                fold_di.append(dice)
-                fold_fn.append(fn)
-                fold_fp.append(fp)
-            total_ol.append(np.mean(fold_ol))
-            total_ja.append(np.mean(fold_ja))
-            total_di.append(np.mean(fold_di))
-            total_fn.append(np.mean(fold_fn))
-            total_fp.append(np.mean(fold_fp))
-
-        print('[Average volume evaluation] overlap:%.4f jaccard:%.4f dice:%.4f fn:%.4f fp:%.4f' % (
-            np.mean(total_ol), np.mean(total_ja), np.mean(total_di), np.mean(total_fn), np.mean(total_fp)))
+        #     # 21.12.01
+        #     # Save prediction file
+        #     # make_prediction_file(save_dir)
+        #     np_start_finish = check_detection_rate(slice_num=8, jump=True)
+        #     # np_start_finish = np.load("./predict_start_finish.npy")
+        #
+        #     for subject in test_ids:
+        #         # print("Fold = %d, subject = %d"%(fold, subject))
+        #         # overlap, jaccard, dice, fn, fp = eval_segmentation_volume(save_dir, str(subject), raw_path)
+        #         overlap, jaccard, dice, fn, fp = eval_segmentation_volume(save_dir, str(subject), raw_path, np_start_finish[int(subject) - 1, :])
+        #
+        #         print(str(subject) + ' %.4f %.4f %.4f %.4f %.4f' % (overlap, jaccard, dice, fn, fp))
+        #
+        #         # print("=" * 50)
+        #         # print("\n")
+        #         fold_ol.append(overlap)
+        #         fold_ja.append(jaccard)
+        #         fold_di.append(dice)
+        #         fold_fn.append(fn)
+        #         fold_fp.append(fp)
+        #     total_ol.append(np.mean(fold_ol))
+        #     total_ja.append(np.mean(fold_ja))
+        #     total_di.append(np.mean(fold_di))
+        #     total_fn.append(np.mean(fold_fn))
+        #     total_fp.append(np.mean(fold_fp))
+        #
+        # print('[Average volume evaluation] overlap:%.4f jaccard:%.4f dice:%.4f fn:%.4f fp:%.4f' % (
+        #     np.mean(total_ol), np.mean(total_ja), np.mean(total_di), np.mean(total_fn), np.mean(total_fp)))
 
 
     if 'detection' in mode:
@@ -340,47 +377,29 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1):
 
 if __name__ == '__main__':
 
-    # model_path_name = "0819_update_all"
-    # model_path_name = "0819_update_all_FD"
-    # model_path_name = "0819_update_all_rpn_1"
-    # model_path_name = "0819_update_all_rpn_2"
-    # model_path_name = "0819_update_all_rpn_3"
-    # model_path_name = "0823_fd_rpn"
 
-    # model_path_name = "0824_fd_rpn_1_1"
-    # model_path_name = "0824_fd_rpn_2_1"
-    # model_path_name = "0824_fd_rpn_3_1"
+    # model_path_name = "1214_8bit"
+    # model_path_name = "1214_dicom"
 
-    # model_path_name = "0824_fd_rpn_1_0.5"
-    # model_path_name = "0824_fd_rpn_2_0.5"
-    # model_path_name = "0824_fd_rpn_3_0.5"
+    model_path_name = "1220_default1"
+    # model_path_name = "1220_default2"
+    # model_path_name = "1220_default3"
 
-    # model_path_name = "maskunet_28_default"
-    # model_path_name = "maskunet_28_default_20_5"
-    # model_path_name = "maskunet_16_default"
-    # model_path_name = "maskunet_36_default"
-    # model_path_name = "maskunet_36_base"
+    # model_path_name = "1220_ours_mask"
 
-    # model_path_name = "maskunet_16_default_20_5"
-    # model_path_name = "maskrcnn_default"
-    # model_path_name = "maskrcnn_default_20_5"
-    # model_path_name = "maskrcnn36"
-    # model_path_name = "maskrcnn16"
-    # model_path_name = "maskrcnn28"
-
-    model_path_name = "new_data_default"
-
+    raw_path = 'data/1220_window'
 
     # Now: Only use 1 fold
     # epoch and step size modi
-    gpu_idx = 2
-    train_batch_size = 2
+    gpu_idx = 0
+    train_batch_size = 1
 
     print("*"*50)
+    print("raw_Path : " + raw_path)
     print("Model_Path : " + model_path_name)
     print("Batch size: " + str(train_batch_size))
     print("*" * 50)
 
-    # main('train', model_path_name, gpu_idx, train_batch_size)
-    main('test', model_path_name, gpu_idx)
+    # main('train', model_path_name, gpu_idx, train_batch_size, raw_path=raw_path)
+    main('test', model_path_name, gpu_idx, raw_path=raw_path)
     # main('detection', model_path_name)

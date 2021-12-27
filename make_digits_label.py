@@ -2,11 +2,13 @@ import os
 import natsort
 import cv2
 import numpy as np
+from sklearn.model_selection import KFold
+import shutil
 
 if __name__=="__main__":
 
-    work_dir = '/home/bh/Downloads/0906_modify_full_contrast/0906_rename_for_bh'
-    mask_dir = os.path.join(work_dir, 'mask_all')
+    work_dir = '/home/bh/Downloads/1220'
+    mask_dir = '/home/bh/Downloads/1220/rename_mask'
 
     file_idx = natsort.natsorted(os.listdir(mask_dir))
 
@@ -22,16 +24,16 @@ if __name__=="__main__":
         # check B.B coordinate
         if len(np.unique(mask)) == 2:
             pos = np.where(mask)
-            l = np.min(pos[1]) - 5
-            t = np.min(pos[0]) - 5
-            r = np.max(pos[1]) + 5
-            b = np.max(pos[0]) + 5
+            l = np.min(pos[1])
+            t = np.min(pos[0])
+            r = np.max(pos[1])
+            b = np.max(pos[0])
 
         else:
-            l = 20
-            t = 20
-            r = 30
-            b = 30
+            l = 10
+            t = 10
+            r = 502
+            b = 502
 
         # img = cv2.imread(os.path.join(work_dir, 'raw_all', idx), cv2.IMREAD_COLOR)
         # cv2.rectangle(img, (l,t), (r,b), (0,255,0), 3)
@@ -43,7 +45,7 @@ if __name__=="__main__":
                 if len(np.unique(mask)) == 2:
                     type = 'Car'
                     truncated = 0
-                    occluded = 3
+                    occluded = 0
                     alpha = 0
                     tail = '0 0 0 0 0 0 0 0'
 
@@ -69,3 +71,22 @@ if __name__=="__main__":
                             str(l) + ' ' + str(t) + ' ' + str(r) + ' ' + str(b) + ' ' + tail
 
                     fp.write(label + '\n')
+
+    path = '/home/bh/Downloads/1220/label/'
+    file_list = list(natsort.natsorted(os.listdir(path)))
+
+    total_subject = list(range(1, 61))
+    kfold = KFold(n_splits=4, shuffle=False)
+
+    for fold, (train_ids, test_ids) in enumerate(kfold.split(total_subject)):
+        print(fold)
+        train_ids = train_ids + 1
+        test_ids = test_ids + 1
+        fold_idx = fold + 1
+        # move train folder
+        for file_idx in file_list:
+            if int(file_idx.split('_')[0]) in train_ids:
+                shutil.copyfile(os.path.join(path, file_idx), os.path.join('/home/bh/digits/detectnet_1220/train/fold%d_label/'%fold_idx, file_idx))
+            else:
+                continue
+

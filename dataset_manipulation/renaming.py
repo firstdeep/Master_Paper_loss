@@ -4,24 +4,25 @@ from shutil import copyfile, move
 import cv2
 import natsort
 
-mask_dir = '/home/bh/Downloads/0906_modify_window_contrast/Blood_PNG_RAW/'
-raw_dir = '/home/bh/Downloads/0906_modify_full_contrast/RAW_PNG/'
+mask_dir = '/home/bh/Downloads/1220/mask/'
+raw_dir = '/home/bh/Downloads/1220/full/'
+window_dir = '/home/bh/Downloads/1220/window/'
 
-mask_dst_dir = '/home/bh/Downloads/data_2111/blood/'
-raw_dst_dir = '/home/bh/Downloads/data_2111/raw/'
+mask_dst_dir = '/home/bh/Downloads/1220/rename_mask/'
+raw_dst_dir = '/home/bh/Downloads/1220/rename_full/'
+window_dst_dir = '/home/bh/Downloads/1220/rename_window/'
 
 list_folder = natsort.natsorted(os.listdir(mask_dir))
 
 count = 1
 
-# file_name = natsort.natsorted(os.listdir(os.path.join(mask_dir, "35882023_1")))
 
 for folder_idx in list_folder:
     if folder_idx == '.DS_Store': continue
 
-    print(folder_idx)
     sub_mask_path = os.path.join(mask_dir, folder_idx)
     sub_raw_path = os.path.join(raw_dir, folder_idx)
+    sub_window_path = os.path.join(window_dir, folder_idx)
 
     list_file = natsort.natsorted(os.listdir(sub_mask_path))
 
@@ -29,10 +30,11 @@ for folder_idx in list_folder:
         if list_idx == '.DS_Store': continue
 
         split_idx = list_idx.split('_')
-        rename = str(count) +"_"+ split_idx[3]
+        rename = str(count) +"_"+ split_idx[2]
 
         copyfile(os.path.join(sub_mask_path, list_idx), os.path.join(mask_dst_dir, rename))
-        copyfile(os.path.join(sub_raw_path, split_idx[0]+'_'+split_idx[1]+'_'+split_idx[3]), os.path.join(raw_dst_dir, rename))
+        copyfile(os.path.join(sub_raw_path, list_idx), os.path.join(raw_dst_dir, rename))
+        copyfile(os.path.join(sub_window_path, list_idx), os.path.join(window_dst_dir, rename))
 
     count = count + 1
 

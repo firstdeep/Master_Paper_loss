@@ -142,4 +142,3 @@ if __name__ =="__main__":
     # Chapter #3
     # Make digits label format using our format
 
-    sub = np.arnage(1,51)

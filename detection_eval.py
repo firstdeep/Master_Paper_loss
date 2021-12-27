@@ -137,14 +137,14 @@ if __name__ =="__main__":
     np.save("./predict_start_finish",pred_final_start_finish_point)
 
 
-def check_detection_rate(slice_num=6, jump = False):
+def check_detection_rate(slice_num=6, jump=False):
     # real world We dont know GT value
     # So we make function and check
-    gt_data = np.load("./dataset_manipulation/GT_256.npy")
+    gt_data = np.load("./dataset_manipulation/GT_512.npy")
     pred_data = np.load("./dataset_manipulation/predict_default.npy")
 
-    subject = np.arange(1, 51)
-    pred_final_start_finish_point = np.zeros((50, 2))
+    subject = np.arange(1, 61)
+    pred_final_start_finish_point = np.zeros((60, 2))
 
     total_rate = []
     total_fn = []
@@ -197,7 +197,6 @@ def check_detection_rate(slice_num=6, jump = False):
                     else:
                         if (jump):
                             if flag == 1:
-
                                 temp_list.extend(pred_seg_idx)
                                 sorted(temp_list)
                                 flag = 0
