@@ -101,7 +101,7 @@ if __name__ == "__main__":
     #       MAIN        #
     #####################
 
-    mask_path = '/home/bh/Downloads/aaa_segmentation/data_visualization/result_1229_only_mask/'
+    mask_path = '/home/bh/Downloads/aaa_segmentation/data_visualization/result_220105_default/'
     print(mask_path)
 
     # GT

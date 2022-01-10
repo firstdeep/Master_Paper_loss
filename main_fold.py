@@ -275,7 +275,7 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1, raw_path="", num_
             # 21.12.01
             # Save prediction file
             # make_prediction_file(save_dir)
-            np_start_finish = check_detection_rate(slice_num=6, jump=False)
+            np_start_finish = check_detection_rate(slice_num=8, jump=False)
             # np_start_finish = np.load("./predict_start_finish.npy")
 
             for subject in test_ids:
@@ -348,8 +348,8 @@ if __name__ == '__main__':
     # model_path_name = "1229_only_rpn"
 
 
-    # model_path_name = "220105_default"
-    model_path_name = "220105_pos"
+    model_path_name = "220105_default"
+    # model_path_name = "220105_pos"
     # model_path_name = "220105_mask_0.4"
     # model_path_name = "220105_mask_0.5"
 
@@ -358,8 +358,8 @@ if __name__ == '__main__':
 
     # Now: Only use 1 fold
     # epoch and step size modi
-    gpu_idx = 0
-    train_batch_size = 24
+    gpu_idx = 2
+    train_batch_size = 1
     num_epoch = 10
 
     print("*"*50)
@@ -368,7 +368,7 @@ if __name__ == '__main__':
     print("Batch size: " + str(train_batch_size))
     print("*" * 50)
 
-    main('train', model_path_name, gpu_idx, train_batch_size, raw_path=raw_path, num_epoch=num_epoch)
-    # main('test', model_path_name, gpu_idx, raw_path=raw_path)
-    # main('visual', model_path_name, gpu_idx, raw_path=raw_path)
+    # main('train', model_path_name, gpu_idx, train_batch_size, raw_path=raw_path, num_epoch=num_epoch)
+    main('test', model_path_name, gpu_idx, raw_path=raw_path, num_epoch=num_epoch)
+
 
