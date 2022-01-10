@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import os
 from PIL import Image
-
+import natsort
 
 def eval_segmentation(src, tgt):
     s = (src / 255.0).astype(np.uint32)
@@ -55,8 +55,8 @@ def eval_segmentation_volume(save_dir, subject, data_path, start_finish=[]):
     pred_path = save_dir
     gt_path = os.path.join(data_path, "mask")
 
-    gt_mask_list = sorted([name for name in os.listdir(gt_path) if subject == name.split("_")[0]])
-    pred_mask_list = sorted([name for name in os.listdir(pred_path) if subject == name.split("_")[0]])
+    gt_mask_list = natsort.natsorted([name for name in os.listdir(gt_path) if subject == name.split("_")[0]])
+    pred_mask_list = natsort.natsorted([name for name in os.listdir(pred_path) if subject == name.split("_")[0]])
 
     # print("[Subject = \"%d\"] & number of pred image \"%d\" & num of GT \"%d\" "%(int(subject), len(pred_mask_list), len(gt_mask_list)))
 

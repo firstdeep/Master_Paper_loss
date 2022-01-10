@@ -7,8 +7,8 @@ import natsort
 mask_dir = '/home/bh/Downloads/aaa_segmentation/data/1220_window/mask/'
 raw_dir = '/home/bh/Downloads/aaa_segmentation/data/1220_window/raw/'
 
-mask_dst_dir = '/home/bh/Downloads/1220/256/mask/'
-raw_dst_dir = '/home/bh/Downloads/1220/256/raw/'
+mask_dst_dir = '/home/bh/Downloads/aaa_segmentation/data/1220_window_256/mask/'
+raw_dst_dir = '/home/bh/Downloads/aaa_segmentation/data/1220_window_256/raw/'
 
 
 list_file = natsort.natsorted(os.listdir(mask_dir))
