@@ -21,7 +21,7 @@ from unet import mask_unet
 from DicomDataset import *
 
 if __name__ =="__main__":
-
+    print("=")
     # Mask Preprocessing
 
     # path = "/home/bh/Downloads/AAA_sampling/dicom_img/"

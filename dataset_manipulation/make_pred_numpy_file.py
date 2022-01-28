@@ -44,57 +44,6 @@ def fit_ellipse(mask):
 
     return bigger_pixel_rect, int(bigger_pixel_ellip)
 
-def make_prediction_file(save_dir):
-    #####################
-    #       MAIN        #
-    #####################
-
-    mask_path = save_dir
-
-    # GT
-    # mask_path = '/home/bh/Desktop/AAA_DATA_NEW/256/mask_all'
-
-    file_list = natsort.natsorted(os.listdir(mask_path))
-    file_list.pop()
-
-    data_arr = np.zeros((50, 300))
-
-    subject_idx = np.arange(1, 51)
-
-    count = 0
-
-    for sub_idx in subject_idx:
-        ellipse = []
-        # print(sub_idx)
-        for file_idx in file_list:
-
-            idx_split = file_idx.split('_')
-            num = int(idx_split[1].split('.')[0])
-
-            if int(idx_split[0]) == sub_idx:
-                mask = cv2.imread(os.path.join(mask_path, file_idx), cv2.IMREAD_GRAYSCALE)
-                # Check positive sample
-                pos_check = int(len(np.unique(mask)))
-
-                if pos_check == 2:
-                    data_arr[(sub_idx - 1), count] = 1
-
-                    # ### ellipse check
-                    # rect, ellip_diameter = fit_ellipse(mask)
-                    # ellipse.append(ellip_diameter)
-                    #
-                    # if ellip_diameter >=18:
-                    #     data_arr[(sub_idx-1),count] = 1
-
-                count = count + 1
-        # print(data_arr[(sub_idx-1)])
-        # print(ellipse)
-        count = 0
-
-
-    np.save("./predict_default", data_arr)
-    print("*" * 50)
-    print("==== Done ====")
 
 if __name__ == "__main__":
     #####################

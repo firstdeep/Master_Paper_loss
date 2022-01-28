@@ -19,13 +19,11 @@ import natsort
 from gil_eval import *
 import random
 from unet import mask_unet
-from dataset_manipulation.make_pred_numpy_file import make_prediction_file
-from detection_eval import check_detection_rate
+
 
 def count_parameter(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-from dataset_manipulation.make_pred_numpy_file import make_prediction_file
 from detection_eval import check_detection_rate
 
 def count_parameter(model):
@@ -181,7 +179,7 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1, raw_path="", num_
         total_fn = []
 
         for fold, (train_ids, test_ids) in enumerate(kfold.split(total_subject)):
-            # if fold != 0:
+            # if fold == 0:
             #     continue
 
             for index, value in enumerate(test_ids):
@@ -193,114 +191,114 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1, raw_path="", num_
             fold_fp = []
             fold_fn = []
 
-            # model.load_state_dict(torch.load('./pretrained/256_s_fold_%d_%s.pth'%(fold,model_path_name)))
-            # dataset_test = torch.load('./pretrained/256_s_test_fold_%d_%s.pth'%(fold,model_path_name))
-            #
-            # num_test = len(dataset_test.indices)
-            #
-            # for i in range(num_test):
-            #     img_name = raw_path + '/raw/' + dataset_test.dataset.imgs[dataset_test.indices[i]]
-            #     mask_name = raw_path + '/mask/' + dataset_test.dataset.imgs[dataset_test.indices[i]]
-            #
-            #     if 'dicom' in raw_path:
-            #         mask_name = raw_path + '/mask/' + dataset_test.dataset.imgs[dataset_test.indices[i]].split('.')[0]+'.png'
-            #         img = pydicom.dcmread(img_name)
-            #         img = (img.pixel_array / 4095).astype(np.float32)
-            #         img = torch.from_numpy(img).contiguous().type(torch.FloatTensor)
-            #         img_rgb = (np.array(img) * 255).astype(np.uint8)
-            #         img = img.unsqueeze(0)
-            #
-            #     else:
-            #         img = Image.open(img_name)
-            #         # img = Image.open(img_name).convert("RGB")
-            #         img_rgb = np.array(img)
-            #         img = F.to_tensor(img)
-            #
-            #     mask_gt = Image.open(mask_name).convert("RGB")
-            #
-            #     model.eval()
-            #     with torch.no_grad():
-            #         prediction = model([img.to(device)])
-            #
-            #     if (list(prediction[0]['boxes'].shape)[0] == 0):
-            #         mask = np.zeros((512, 512), dtype=np.uint8)
-            #     else:
-            #         mask = Image.fromarray(prediction[0]['masks'][0, 0].mul(255).byte().cpu().numpy())
-            #
-            #     img_mask = np.array(mask)
-            #     img_mask_gt = np.array(mask_gt)
-            #     img_mask[img_mask > 127] = 255
-            #     img_mask[img_mask <= 127] = 0
-            #
-            #     # img_gray = img_rgb
-            #     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
-            #
-            #     img_gray_color = cv2.cvtColor(img_gray, cv2.COLOR_GRAY2BGR)
-            #
-            #     img_overlap = img_mask_gt.copy()
-            #     img_overlap[:, :, 0] = 0
-            #     img_overlap[:, :, 1] = img_mask
-            #
-            #     img_pred_color = cv2.cvtColor(img_mask, cv2.COLOR_GRAY2BGR)
-            #
-            #     add_img = cv2.addWeighted(img_gray_color, 0.7, img_overlap, 0.3, 0)
-            #
-            #     red_gt = img_mask_gt.copy()
-            #     green_pred = img_pred_color.copy()
-            #
-            #     idx_gt = np.where(red_gt > 0)
-            #     idx_sr = np.where(green_pred > 0)
-            #     red_gt[idx_gt[0], idx_gt[1], :] = [0, 0, 255]
-            #     green_pred[idx_sr[0], idx_sr[1], :] = [0, 255, 0]
-            #
-            #     cv2.putText(img_gray_color, "\"Raw image\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
-            #     cv2.putText(add_img, "\"Raw + GT + Predict\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
-            #     cv2.putText(red_gt, "\"GT\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
-            #     cv2.putText(green_pred, "\"Predict\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
-            #     cv2.putText(img_overlap, "\"GT + predict\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
-            #
-            #     img_all = np.concatenate([img_gray_color, add_img, red_gt, green_pred, img_overlap], axis=1)
-            #
-            #
-            #     if 'dicom' in raw_path:
-            #         all_img_file = dataset_test.dataset.imgs[dataset_test.indices[i]].split('.')[0]+'_maskrcnn.png'
-            #         mask_file = dataset_test.dataset.imgs[dataset_test.indices[i]].split('.')[0] + '.png'
-            #         cv2.imwrite(save_dir_analysis + all_img_file, img_all)
-            #         cv2.imwrite(save_dir + mask_file, img_mask)
-            #     else:
-            #         cv2.imwrite(save_dir_analysis + dataset_test.dataset.imgs[dataset_test.indices[i]].replace('.png', '_maskrcnn.png'), img_all)
-            #         cv2.imwrite(save_dir + dataset_test.dataset.imgs[dataset_test.indices[i]], img_mask)
+            model.load_state_dict(torch.load('./pretrained/256_s_fold_%d_%s.pth'%(fold,model_path_name)))
+            dataset_test = torch.load('./pretrained/256_s_test_fold_%d_%s.pth'%(fold,model_path_name))
+
+            num_test = len(dataset_test.indices)
+
+            for i in range(num_test):
+                img_name = raw_path + '/raw/' + dataset_test.dataset.imgs[dataset_test.indices[i]]
+                mask_name = raw_path + '/mask/' + dataset_test.dataset.imgs[dataset_test.indices[i]]
+
+                if 'dicom' in raw_path:
+                    mask_name = raw_path + '/mask/' + dataset_test.dataset.imgs[dataset_test.indices[i]].split('.')[0]+'.png'
+                    img = pydicom.dcmread(img_name)
+                    img = (img.pixel_array / 4095).astype(np.float32)
+                    img = torch.from_numpy(img).contiguous().type(torch.FloatTensor)
+                    img_rgb = (np.array(img) * 255).astype(np.uint8)
+                    img = img.unsqueeze(0)
+
+                else:
+                    img = Image.open(img_name)
+                    # img = Image.open(img_name).convert("RGB")
+                    img_rgb = np.array(img)
+                    img = F.to_tensor(img)
+
+                mask_gt = Image.open(mask_name).convert("RGB")
+
+                model.eval()
+                with torch.no_grad():
+                    prediction = model([img.to(device)])
+
+                if (list(prediction[0]['boxes'].shape)[0] == 0):
+                    mask = np.zeros((512, 512), dtype=np.uint8)
+                else:
+                    mask = Image.fromarray(prediction[0]['masks'][0, 0].mul(255).byte().cpu().numpy())
+
+                img_mask = np.array(mask)
+                img_mask_gt = np.array(mask_gt)
+                img_mask[img_mask > 127] = 255
+                img_mask[img_mask <= 127] = 0
+
+                # img_gray = img_rgb
+                img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+
+                img_gray_color = cv2.cvtColor(img_gray, cv2.COLOR_GRAY2BGR)
+
+                img_overlap = img_mask_gt.copy()
+                img_overlap[:, :, 0] = 0
+                img_overlap[:, :, 1] = img_mask
+
+                img_pred_color = cv2.cvtColor(img_mask, cv2.COLOR_GRAY2BGR)
+
+                add_img = cv2.addWeighted(img_gray_color, 0.7, img_overlap, 0.3, 0)
+
+                red_gt = img_mask_gt.copy()
+                green_pred = img_pred_color.copy()
+
+                idx_gt = np.where(red_gt > 0)
+                idx_sr = np.where(green_pred > 0)
+                red_gt[idx_gt[0], idx_gt[1], :] = [255, 0, 255]
+                green_pred[idx_sr[0], idx_sr[1], :] = [255, 255, 0]
+
+                # cv2.putText(img_gray_color, "\"Raw image\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
+                # cv2.putText(add_img, "\"Raw + GT + Predict\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
+                # cv2.putText(red_gt, "\"GT\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
+                # cv2.putText(green_pred, "\"Predict\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
+                # cv2.putText(img_overlap, "\"GT + predict\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
+                #
+                # img_all = np.concatenate([img_gray_color, add_img, red_gt, green_pred, img_overlap], axis=1)
+                img_all = img_overlap
+
+                if 'dicom' in raw_path:
+                    all_img_file = dataset_test.dataset.imgs[dataset_test.indices[i]].split('.')[0]+'_maskrcnn.png'
+                    mask_file = dataset_test.dataset.imgs[dataset_test.indices[i]].split('.')[0] + '.png'
+                    cv2.imwrite(save_dir_analysis + all_img_file, img_all)
+                    cv2.imwrite(save_dir + mask_file, img_mask)
+                else:
+                    cv2.imwrite(save_dir_analysis + dataset_test.dataset.imgs[dataset_test.indices[i]].replace('.png', '_maskrcnn.png'), img_all)
+                    cv2.imwrite(save_dir + dataset_test.dataset.imgs[dataset_test.indices[i]], img_mask)
 
 
-            # 21.12.01
-            # Save prediction file
-            # make_prediction_file(save_dir)
-            np_start_finish = check_detection_rate(slice_num=8, jump=False)
-            # np_start_finish = np.load("./predict_start_finish.npy")
-
-            for subject in test_ids:
-                # print("Fold = %d, subject = %d"%(fold, subject))
-                # overlap, jaccard, dice, fn, fp = eval_segmentation_volume(save_dir, str(subject), raw_path)
-                overlap, jaccard, dice, fn, fp = eval_segmentation_volume(save_dir, str(subject), raw_path, np_start_finish[int(subject) - 1, :])
-
-                print(str(subject) + ' %.4f %.4f %.4f %.4f %.4f' % (overlap, jaccard, dice, fn, fp))
-
-                # print("=" * 50)
-                # print("\n")
-                fold_ol.append(overlap)
-                fold_ja.append(jaccard)
-                fold_di.append(dice)
-                fold_fn.append(fn)
-                fold_fp.append(fp)
-
-            total_ol.append(np.mean(fold_ol))
-            total_ja.append(np.mean(fold_ja))
-            total_di.append(np.mean(fold_di))
-            total_fn.append(np.mean(fold_fn))
-            total_fp.append(np.mean(fold_fp))
-
-        print('[Average volume evaluation] overlap:%.4f jaccard:%.4f dice:%.4f fn:%.4f fp:%.4f' % (
-            np.mean(total_ol), np.mean(total_ja), np.mean(total_di), np.mean(total_fn), np.mean(total_fp)))
+        #     # 21.12.01
+        #     # Save prediction file
+        #     # make_prediction_file(save_dir)
+        #     np_start_finish = check_detection_rate(slice_num=8, jump=False)
+        #     # np_start_finish = np.load("./predict_start_finish.npy")
+        #
+        #     for subject in test_ids:
+        #         # print("Fold = %d, subject = %d"%(fold, subject))
+        #         # overlap, jaccard, dice, fn, fp = eval_segmentation_volume(save_dir, str(subject), raw_path)
+        #         overlap, jaccard, dice, fn, fp = eval_segmentation_volume(save_dir, str(subject), raw_path, np_start_finish[int(subject) - 1, :])
+        #
+        #         print(str(subject) + ' %.4f %.4f %.4f %.4f %.4f' % (overlap, jaccard, dice, fn, fp))
+        #
+        #         # print("=" * 50)
+        #         # print("\n")
+        #         fold_ol.append(overlap)
+        #         fold_ja.append(jaccard)
+        #         fold_di.append(dice)
+        #         fold_fn.append(fn)
+        #         fold_fp.append(fp)
+        #
+        #     total_ol.append(np.mean(fold_ol))
+        #     total_ja.append(np.mean(fold_ja))
+        #     total_di.append(np.mean(fold_di))
+        #     total_fn.append(np.mean(fold_fn))
+        #     total_fp.append(np.mean(fold_fp))
+        #
+        # print('[Average volume evaluation] overlap:%.4f jaccard:%.4f dice:%.4f fn:%.4f fp:%.4f' % (
+        #     np.mean(total_ol), np.mean(total_ja), np.mean(total_di), np.mean(total_fn), np.mean(total_fp)))
 
     if 'visual' in mode:
         img = cv2.imread("/home/bh/Downloads/0906_modify_window_contrast/0906_rename_for_bh/raw_all/1_0083.png",
@@ -349,16 +347,20 @@ if __name__ == '__main__':
 
 
     model_path_name = "220105_default"
-    # model_path_name = "220105_pos"
-    # model_path_name = "220105_mask_0.4"
-    # model_path_name = "220105_mask_0.5"
+    # model_path_name = "220105_pos" # 3/0.5/0.3
+    # model_path_name = "220105_pos_1.5_0.3"
 
+    # model_path_name = "220105_pos_2"
+    # model_path_name = "220105_pos_1.5"
+    
+    # model_path_name = "220105_neg_2"
+    # model_path_name = "220105_neg_ori"
 
     raw_path = 'data/1220_window'
 
     # Now: Only use 1 fold
     # epoch and step size modi
-    gpu_idx = 2
+    gpu_idx = 1
     train_batch_size = 1
     num_epoch = 10
 
