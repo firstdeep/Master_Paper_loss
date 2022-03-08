@@ -20,7 +20,7 @@ from unet import mask_unet
 
 
 if __name__ =="__main__":
-
+    print("=")
     # Mask Preprocessing
 
     # path = "/home/bh/Downloads/AAA_sampling/dicom_img/"
