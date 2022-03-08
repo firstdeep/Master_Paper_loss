@@ -1,10 +1,13 @@
 import numpy as np
 import os
 
-def check_detection_rate(slice_num=6, jump=False):
+def check_detection_rate(slice_num=6, jump=False,model_path_name=""):
     # real world We dont know GT value
     # So we make function and check
     gt_data = np.load("./dataset_manipulation/GT_512.npy")
+    # pred_data = np.load("./dataset_manipulation/predict_default_%s.npy"%(model_path_name.split("_")[1]))
+    # print("./dataset_manipulation/predict_default_%s.npy"%(model_path_name.split("_")[1]))
+
     pred_data = np.load("./dataset_manipulation/predict_default.npy")
 
     subject = np.arange(1, 61)
@@ -128,9 +131,10 @@ def check_detection_rate(slice_num=6, jump=False):
     fp_t = (sum(total_fp) / len(total_fp)) / 100
     recall = (1 - fn_t) / ((1 - fn_t) + fn_t)
     precision = (1 - fn_t) / ((1 - fn_t) + fp_t)
+    Iou = (1 - fn_t) / ((1 - fn_t) + fp_t + fn_t)
     f1 = 2 * ((recall * precision) / (recall + precision))
     print("Total_fn = %.2f%%, Total_fp = %.2f%%" % (fn_t_percent, fp_t_percent))
-    print("recall = %.2f%% , Precision = %.2f%%" % (recall * 100, precision * 100))
+    print("recall = %.2f%% , Precision = %.2f%%. Iou = %.2f%%" % (recall * 100, precision * 100, Iou * 100))
     print("F1 Score = %.2f%%" % (f1 * 100))
 
     return pred_final_start_finish_point

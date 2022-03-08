@@ -18,7 +18,6 @@ from gil_eval import *
 import random
 from unet import mask_unet
 
-from DicomDataset import *
 
 if __name__ =="__main__":
 

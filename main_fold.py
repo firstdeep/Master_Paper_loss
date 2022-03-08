@@ -2,7 +2,6 @@ import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 from GilAAADataset import *
-from DicomDataset import *
 from featuremap_color import *
 
 from engine import train_one_epoch, evaluate
@@ -30,6 +29,32 @@ from detection_eval import check_detection_rate
 
 def count_parameter(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def cal_iou(boxA, boxB):
+    # determine the (x, y)-coordinates of the intersection rectangle
+    xA = max(boxA[0], boxB[0])
+    yA = max(boxA[1], boxB[1])
+    xB = min(boxA[2], boxB[2])
+    yB = min(boxA[3], boxB[3])
+
+    # compute the area of intersection rectangle
+    interArea = abs(max((xB - xA, 0)) * max((yB - yA), 0))
+    if interArea == 0:
+        return 0
+    # compute the area of both the prediction and ground-truth
+    # rectangles
+    boxAArea = abs((boxA[2] - boxA[0]) * (boxA[3] - boxA[1]))
+    boxBArea = abs((boxB[2] - boxB[0]) * (boxB[3] - boxB[1]))
+
+    # compute the intersection over union by taking the intersection
+    # area and dividing it by the sum of prediction + ground-truth
+    # areas - the interesection area
+    iou = interArea / float(boxAArea + boxBArea - interArea)
+
+    # return the intersection over union value
+    return iou
+
 
 
 def get_instance_segmentation_model(num_classes):
@@ -62,12 +87,8 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1, raw_path="", num_
 
     raw_path = raw_path
 
-    if 'dicom' in raw_path:
-        total_dataset = AAA_dicom(raw_path, get_transform(train=True))
-        total_dataset_test = AAA_dicom(raw_path, get_transform(train=False))
-    else:
-        total_dataset = GilAAADataset(raw_path, get_transform(train=True))
-        total_dataset_test = GilAAADataset(raw_path, get_transform(train=False))
+    total_dataset = GilAAADataset(raw_path, get_transform(train=True))
+    total_dataset_test = GilAAADataset(raw_path, get_transform(train=False))
 
     ################################
     # Modify subject range
@@ -75,8 +96,8 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1, raw_path="", num_
     kfold = KFold(n_splits=fold_num, shuffle=False)
 
     for fold, (train_ids, test_ids) in enumerate(kfold.split(total_subject)):
-        # if fold!=0:
-        #     continue
+        if fold!=3:
+            continue
 
         for index, value in enumerate(test_ids):
             test_ids[index] = value + 1
@@ -167,12 +188,12 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1, raw_path="", num_
         print("\n")
         print("*" * 25)
 
-        if not os.path.exists("/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/"%(model_path_name)):
-            os.mkdir("/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/"%(model_path_name))
-        if not os.path.exists('/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/result_analysis/'%(model_path_name)):
-            os.mkdir("/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/result_analysis/"%(model_path_name))
-        save_dir = '/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/'%(model_path_name)
-        save_dir_analysis = '/home/bh/Downloads/aaa_segmentation/data_visualization/result_%s/result_analysis/'%(model_path_name)
+        if not os.path.exists("./data_visualization/result_%s/"%(model_path_name)):
+            os.mkdir("./data_visualization/result_%s/"%(model_path_name))
+        if not os.path.exists('./data_visualization/result_%s/result_analysis/'%(model_path_name)):
+            os.mkdir("./data_visualization/result_%s/result_analysis/"%(model_path_name))
+        save_dir = './data_visualization/result_%s/'%(model_path_name)
+        save_dir_analysis = './data_visualization/result_%s/result_analysis/'%(model_path_name)
 
         total_ol = []
         total_ja = []
@@ -193,89 +214,107 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1, raw_path="", num_
             fold_fp = []
             fold_fn = []
 
-            # model.load_state_dict(torch.load('./pretrained/256_s_fold_%d_%s.pth'%(fold,model_path_name)))
-            # dataset_test = torch.load('./pretrained/256_s_test_fold_%d_%s.pth'%(fold,model_path_name))
-            #
-            # num_test = len(dataset_test.indices)
-            #
-            # for i in range(num_test):
-            #     img_name = raw_path + '/raw/' + dataset_test.dataset.imgs[dataset_test.indices[i]]
-            #     mask_name = raw_path + '/mask/' + dataset_test.dataset.imgs[dataset_test.indices[i]]
-            #
-            #     if 'dicom' in raw_path:
-            #         mask_name = raw_path + '/mask/' + dataset_test.dataset.imgs[dataset_test.indices[i]].split('.')[0]+'.png'
-            #         img = pydicom.dcmread(img_name)
-            #         img = (img.pixel_array / 4095).astype(np.float32)
-            #         img = torch.from_numpy(img).contiguous().type(torch.FloatTensor)
-            #         img_rgb = (np.array(img) * 255).astype(np.uint8)
-            #         img = img.unsqueeze(0)
-            #
-            #     else:
-            #         img = Image.open(img_name)
-            #         # img = Image.open(img_name).convert("RGB")
-            #         img_rgb = np.array(img)
-            #         img = F.to_tensor(img)
-            #
-            #     mask_gt = Image.open(mask_name).convert("RGB")
-            #
-            #     model.eval()
-            #     with torch.no_grad():
-            #         prediction = model([img.to(device)])
-            #
-            #     if (list(prediction[0]['boxes'].shape)[0] == 0):
-            #         mask = np.zeros((512, 512), dtype=np.uint8)
-            #     else:
-            #         mask = Image.fromarray(prediction[0]['masks'][0, 0].mul(255).byte().cpu().numpy())
-            #
-            #     img_mask = np.array(mask)
-            #     img_mask_gt = np.array(mask_gt)
-            #     img_mask[img_mask > 127] = 255
-            #     img_mask[img_mask <= 127] = 0
-            #
-            #     # img_gray = img_rgb
-            #     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
-            #
-            #     img_gray_color = cv2.cvtColor(img_gray, cv2.COLOR_GRAY2BGR)
-            #
-            #     img_overlap = img_mask_gt.copy()
-            #     img_overlap[:, :, 0] = 0
-            #     img_overlap[:, :, 1] = img_mask
-            #
-            #     img_pred_color = cv2.cvtColor(img_mask, cv2.COLOR_GRAY2BGR)
-            #
-            #     add_img = cv2.addWeighted(img_gray_color, 0.7, img_overlap, 0.3, 0)
-            #
-            #     red_gt = img_mask_gt.copy()
-            #     green_pred = img_pred_color.copy()
-            #
-            #     idx_gt = np.where(red_gt > 0)
-            #     idx_sr = np.where(green_pred > 0)
-            #     red_gt[idx_gt[0], idx_gt[1], :] = [0, 0, 255]
-            #     green_pred[idx_sr[0], idx_sr[1], :] = [0, 255, 0]
-            #
-            #     cv2.putText(img_gray_color, "\"Raw image\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
-            #     cv2.putText(add_img, "\"Raw + GT + Predict\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
-            #     cv2.putText(red_gt, "\"GT\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
-            #     cv2.putText(green_pred, "\"Predict\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
-            #     cv2.putText(img_overlap, "\"GT + predict\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
-            #
-            #     img_all = np.concatenate([img_gray_color, add_img, red_gt, green_pred, img_overlap], axis=1)
-            #
-            #
-            #     if 'dicom' in raw_path:
-            #         all_img_file = dataset_test.dataset.imgs[dataset_test.indices[i]].split('.')[0]+'_maskrcnn.png'
-            #         mask_file = dataset_test.dataset.imgs[dataset_test.indices[i]].split('.')[0] + '.png'
-            #         cv2.imwrite(save_dir_analysis + all_img_file, img_all)
-            #         cv2.imwrite(save_dir + mask_file, img_mask)
-            #     else:
-            #         cv2.imwrite(save_dir_analysis + dataset_test.dataset.imgs[dataset_test.indices[i]].replace('.png', '_maskrcnn.png'), img_all)
-            #         cv2.imwrite(save_dir + dataset_test.dataset.imgs[dataset_test.indices[i]], img_mask)
+            model.load_state_dict(torch.load('./pretrained/256_s_fold_%d_%s.pth'%(fold,model_path_name)))
+            dataset_test = torch.load('./pretrained/256_s_test_fold_%d_%s.pth'%(fold,model_path_name))
+
+            num_test = len(dataset_test.indices)
+
+            for i in range(num_test):
+                img_name = raw_path + '/raw/' + dataset_test.dataset.imgs[dataset_test.indices[i]]
+                mask_name = raw_path + '/mask/' + dataset_test.dataset.imgs[dataset_test.indices[i]]
+
+
+                img = Image.open(img_name)
+                # img = Image.open(img_name).convert("RGB")
+                img_rgb = np.array(img)
+                img = F.to_tensor(img)
+
+                mask_gt = Image.open(mask_name).convert("RGB")
+                mask_gt_gray = np.array(Image.open(mask_name))
+
+                model.eval()
+                with torch.no_grad():
+                    prediction = model([img.to(device)])
+
+                if (list(prediction[0]['boxes'].shape)[0] == 0):
+                    mask = np.zeros((512, 512), dtype=np.uint8)
+                else:
+                    mask = Image.fromarray(prediction[0]['masks'][0, 0].mul(255).byte().cpu().numpy())
+
+                img_mask = np.array(mask)
+                img_mask_gt = np.array(mask_gt)
+                img_mask[img_mask > 127] = 255
+                img_mask[img_mask <= 127] = 0
+
+                # img_gray = img_rgb
+                img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
+                img_gray_color = cv2.cvtColor(img_gray, cv2.COLOR_GRAY2BGR)
+
+                # bbox visualization
+                bbox_gt_list = [0,0,0,0]
+                bbox_pred_list = [0,0,0,0]
+
+                img_bbox = img_gray_color
+                if len(prediction[0]['boxes'].cpu().numpy()):
+                    array_bbox = prediction[0]['boxes'].cpu().numpy()[0]
+                    # prediction
+                    img_bbox = cv2.rectangle(img_bbox, (int(round(array_bbox[0])), int(round(array_bbox[1]))),
+                                             (int(round(array_bbox[2])), int(round(array_bbox[3]))), (0,255,255), 2)
+
+                    bbox_pred_list = [(int(round(array_bbox[0]))),(int(round(array_bbox[1]))),(int(round(array_bbox[2]))),(int(round(array_bbox[3]))),]
+
+                # bbox gt visualizaiton
+                # gt
+                pos = np.where(mask_gt_gray)
+
+                if len(pos[0]):
+                    xmin = np.min(pos[1]) - 5
+                    ymin = np.min(pos[0]) - 5
+                    xmax = np.max(pos[1]) + 5
+                    ymax = np.max(pos[0]) + 5
+                    img_bbox = cv2.rectangle(img_bbox, (xmin, ymin), (xmax, ymax), (0, 0, 255), 2)
+
+                    bbox_gt_list = [xmin, ymin, xmax, ymax]
+
+                bbox_iou = cal_iou(bbox_gt_list, bbox_pred_list)
+                cv2.putText(img_bbox, "IoU: {:.4f}".format(bbox_iou), (10,30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
+
+
+                img_overlap = img_mask_gt.copy()
+                img_overlap[:, :, 0] = 0
+                img_overlap[:, :, 1] = img_mask
+
+                img_pred_color = cv2.cvtColor(img_mask, cv2.COLOR_GRAY2BGR)
+
+                add_img = cv2.addWeighted(img_gray_color, 0.7, img_overlap, 0.3, 0)
+
+                red_gt = img_mask_gt.copy()
+                green_pred = img_pred_color.copy()
+
+                idx_gt = np.where(red_gt > 0)
+                idx_sr = np.where(green_pred > 0)
+                red_gt[idx_gt[0], idx_gt[1], :] = [0, 0, 255]
+                green_pred[idx_sr[0], idx_sr[1], :] = [0, 255, 0]
+
+                # cv2.putText(img_gray_color, "\"Raw image\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
+                # cv2.putText(add_img, "\"Raw + GT + Predict\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
+                # cv2.putText(red_gt, "\"GT\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
+                # cv2.putText(green_pred, "\"Predict\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
+                # cv2.putText(img_overlap, "\"GT + predict\"", (5,25),cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255), 1,cv2.LINE_AA, bottomLeftOrigin=False)
+                # img_all = np.concatenate([img_gray_color, add_img, red_gt, green_pred, img_overlap], axis=1)
+                img_all = img_overlap
+                cv2.imwrite(save_dir_analysis + dataset_test.dataset.imgs[dataset_test.indices[i]].replace('.png', '_maskrcnn.png'), img_all)
+                cv2.imwrite(save_dir + dataset_test.dataset.imgs[dataset_test.indices[i]], img_mask)
+
+                cv2.imwrite(save_dir_analysis + dataset_test.dataset.imgs[dataset_test.indices[i]].replace('.png',
+                                                                                                           '_bbox.png'), img_bbox)
+                cv2.imwrite(save_dir + dataset_test.dataset.imgs[dataset_test.indices[i]], img_mask)
 
 
             # 21.12.01
             # Save prediction file
             # make_prediction_file(save_dir)
-            np_start_finish = check_detection_rate(slice_num=8, jump=False)
+            np_start_finish = check_detection_rate(slice_num=8, jump=False, model_path_name=model_path_name)
             # np_start_finish = np.load("./predict_start_finish.npy")
 
             for subject in test_ids:
@@ -333,32 +372,33 @@ def main(mode, model_path_name, gpu_idx=0, train_batch_size=1, raw_path="", num_
 if __name__ == '__main__':
 
 
-    # model_path_name = "1214_8bit"
-    # model_path_name = "1214_dicom"
-
-    # model_path_name = "1220_default"
-
-    # model_path_name = "1227_default1"
-    # model_path_name = "1227_default2"
-    # model_path_name = "1227_default3"
-
-    # model_path_name = "1220_ours_mask"
-
-    # model_path_name = "1229_only_mask"
-    # model_path_name = "1229_only_rpn"
+    # model_path_name = "220105_default"
 
 
-    model_path_name = "220105_default"
-    # model_path_name = "220105_pos"
-    # model_path_name = "220105_mask_0.4"
-    # model_path_name = "220105_mask_0.5"
+    # model_path_name = "220105_pos_0.4"
+    # model_path_name = "220105_pos_2_0.4" # best
+
+    # model_path_name = "220214_0.1"
+    # model_path_name = "220214_0.2"
+    # model_path_name = "220214_0.3"
+    # model_path_name = "220214_0.4"
+    # model_path_name = "220214_0.5"
+    # model_path_name = "220214_0.6"
+    # model_path_name = "220214_0.7"
+    # model_path_name = "220214_0.8"
+    # model_path_name = "220214_0.9"
+
+    # model_path_name = "220214_ciou"
+    # model_path_name = "220214_diou"
+    model_path_name = "220214_giou"
+    # model_path_name = "220214_smooth"
 
 
     raw_path = 'data/1220_window'
 
     # Now: Only use 1 fold
     # epoch and step size modi
-    gpu_idx = 2
+    gpu_idx = 0
     train_batch_size = 1
     num_epoch = 10
 
@@ -368,7 +408,7 @@ if __name__ == '__main__':
     print("Batch size: " + str(train_batch_size))
     print("*" * 50)
 
-    # main('train', model_path_name, gpu_idx, train_batch_size, raw_path=raw_path, num_epoch=num_epoch)
+    # ain('train', model_path_name, gpu_idx, train_batch_size, raw_path=raw_path, num_epoch=num_epoch)
     main('test', model_path_name, gpu_idx, raw_path=raw_path, num_epoch=num_epoch)
 
 

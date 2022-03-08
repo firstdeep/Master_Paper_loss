@@ -804,11 +804,11 @@ class BinaryFocalLoss(torch.nn.Module):
             neg_mask = neg_mask * valid_mask
 
         pos_weight = (pos_mask * torch.pow(1 - prob, self.gamma)).detach()
-        pos_loss = -self.alpha * pos_weight * torch.log(prob)  # / (torch.sum(pos_weight) + 1e-4)
+        pos_loss = -pos_weight * torch.log(prob)  # / (torch.sum(pos_weight) + 1e-4)
 
         neg_weight = (neg_mask * torch.pow(prob, self.gamma)).detach()
         # neg_loss = -self.alpha * neg_weight * F.logsigmoid(-output)  # / (torch.sum(neg_weight) + 1e-4)
-        neg_loss = -neg_weight * torch.log(1-prob)
+        neg_loss = -self.alpha * neg_weight * torch.log(1-prob)
         loss = pos_loss + neg_loss
         loss = loss.mean()
 
